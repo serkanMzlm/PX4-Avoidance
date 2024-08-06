@@ -1,5 +1,11 @@
 #include "avoidance/transform_buffer.h"
 
+#include <rclcpp/rclcpp.hpp>
+#include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+
 namespace avoidance {
 
 namespace tf_buffer {
@@ -12,29 +18,39 @@ std::string TransformBuffer::getKey(const std::string& source_frame, const std::
   return source_frame + "_to_" + target_frame;
 }
 
-bool TransformBuffer::interpolateTransform(const geometry_msgs::msg::TransformStamped& tf_earlier, const geometry_msgs::msg::TransformStamped& tf_later,
+
+bool TransformBuffer::interpolateTransform(const geometry_msgs::msg::TransformStamped& tf_earlier, 
+                                           const geometry_msgs::msg::TransformStamped& tf_later,
                                            geometry_msgs::msg::TransformStamped& transform) const {
-  // check if the requested timestamp lies between the two given transforms
-  if (rclcpp::Time(transform.header.stamp) > rclcpp::Time(tf_later.header.stamp) || rclcpp::Time(transform.header.stamp) < rclcpp::Time(tf_earlier.header.stamp)) {
+  // Check if the requested timestamp lies between the two given transforms
+  if (rclcpp::Time(transform.header.stamp) > rclcpp::Time(tf_later.header.stamp) || 
+      rclcpp::Time(transform.header.stamp) < rclcpp::Time(tf_earlier.header.stamp)) {
     return false;
   }
 
   const rclcpp::Duration timeBetween = rclcpp::Time(tf_later.header.stamp) - rclcpp::Time(tf_earlier.header.stamp);
   const rclcpp::Duration timeAfterEarlier = rclcpp::Time(transform.header.stamp) - rclcpp::Time(tf_earlier.header.stamp);
-  const float tau = static_cast<float>(timeAfterEarlier.nanoseconds()) / timeBetween.nanoseconds();
+  const float tau = static_cast<float>(timeAfterEarlier.nanoseconds()) / static_cast<float>(timeBetween.nanoseconds());
 
   tf2::Vector3 tf_earlier_translation;
   tf2::Quaternion tf_earlier_rotation;
   tf2::Quaternion tf_later_rotation;
-  tf2::fromMsg(tf_earlier_translation, tf_earlier.transform.translation);
-  tf2::fromMsg(tf_earlier_rotation, tf_earlier.transform.rotation);
-  tf2::fromMsg(tf_later_rotation, tf_later.transform.rotation);
 
-  const tf2::Vector3 translation = tf_earlier_translation * (1.f - tau) + tf_earlier_translation * tau;
+  tf_earlier_translation.setX(tf_earlier.transform.translation.x);
+  tf_earlier_translation.setY(tf_earlier.transform.translation.y);
+  tf_earlier_translation.setZ(tf_earlier.transform.translation.z);
+
+  tf2::fromMsg(tf_earlier.transform.rotation, tf_earlier_rotation);
+  tf2::fromMsg(tf_later.transform.rotation, tf_later_rotation);
+
+  const tf2::Vector3 translation = tf_earlier_translation * (1.0f - tau) + tf_earlier_translation * tau;
   const tf2::Quaternion rotation = tf_earlier_rotation.slerp(tf_later_rotation, tau);
 
-  transform.transform.translation = avoidance::toVector3Msg(translation);
+  transform.transform.translation.x = translation.x();
+  transform.transform.translation.y = translation.y();
+  transform.transform.translation.z = translation.z();
   transform.transform.rotation = tf2::toMsg(rotation);
+
   return true;
 }
 
