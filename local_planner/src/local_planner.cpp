@@ -4,11 +4,12 @@
 #include "star_planner.h"
 #include "tree_node.h"
 
-#include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/image_encodings.hpp>
+#include <sensor_msgs/msg/laser_scan.hpp>
 
 namespace avoidance {
 
-LocalPlanner::LocalPlanner() : star_planner_(new StarPlanner()) {}
+LocalPlanner::LocalPlanner() : star_planner_(new StarPlanner()), Node("local_planner") {}
 
 LocalPlanner::~LocalPlanner() {}
 
@@ -22,37 +23,37 @@ void LocalPlanner::setState(const Eigen::Vector3f& pos, const Eigen::Vector3f& v
 }
 
 // set parameters changed by dynamic rconfigure
-void LocalPlanner::dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level) {
-  max_sensor_range_ = static_cast<float>(config.max_sensor_range_);
-  cost_params_.pitch_cost_param = config.pitch_cost_param_;
-  cost_params_.yaw_cost_param = config.yaw_cost_param_;
-  cost_params_.velocity_cost_param = config.velocity_cost_param_;
-  cost_params_.obstacle_cost_param = config.obstacle_cost_param_;
-  max_point_age_s_ = static_cast<float>(config.max_point_age_s_);
-  min_num_points_per_cell_ = config.min_num_points_per_cell_;
-  min_sensor_range_ = static_cast<float>(config.min_sensor_range_);
-  timeout_startup_ = config.timeout_startup_;
-  timeout_critical_ = config.timeout_critical_;
-  timeout_termination_ = config.timeout_termination_;
-  children_per_node_ = config.children_per_node_;
-  n_expanded_nodes_ = config.n_expanded_nodes_;
-  smoothing_margin_degrees_ = static_cast<float>(config.smoothing_margin_degrees_);
+// void LocalPlanner::dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level) {
+//   max_sensor_range_ = static_cast<float>(config.max_sensor_range_);
+//   cost_params_.pitch_cost_param = config.pitch_cost_param_;
+//   cost_params_.yaw_cost_param = config.yaw_cost_param_;
+//   cost_params_.velocity_cost_param = config.velocity_cost_param_;
+//   cost_params_.obstacle_cost_param = config.obstacle_cost_param_;
+//   max_point_age_s_ = static_cast<float>(config.max_point_age_s_);
+//   min_num_points_per_cell_ = config.min_num_points_per_cell_;
+//   min_sensor_range_ = static_cast<float>(config.min_sensor_range_);
+//   timeout_startup_ = config.timeout_startup_;
+//   timeout_critical_ = config.timeout_critical_;
+//   timeout_termination_ = config.timeout_termination_;
+//   children_per_node_ = config.children_per_node_;
+//   n_expanded_nodes_ = config.n_expanded_nodes_;
+//   smoothing_margin_degrees_ = static_cast<float>(config.smoothing_margin_degrees_);
 
-  if (getGoal().z() != config.goal_z_param) {
-    auto goal = getGoal();
-    goal.z() = config.goal_z_param;
-    setGoal(goal);
-  }
+//   if (getGoal().z() != config.goal_z_param) {
+//     auto goal = getGoal();
+//     goal.z() = config.goal_z_param;
+//     setGoal(goal);
+//   }
 
-  star_planner_->dynamicReconfigureSetStarParams(config, level);
+//   star_planner_->dynamicReconfigureSetStarParams(config, level);
 
-  ROS_DEBUG("\033[0;35m[OA] Dynamic reconfigure call \033[0m");
-}
+//   ROS_DEBUG("\033[0;35m[OA] Dynamic reconfigure call \033[0m");
+// }
 
 void LocalPlanner::setGoal(const Eigen::Vector3f& goal) {
   goal_ = goal;
 
-  ROS_INFO("===== Set Goal ======: [%f, %f, %f].", goal_.x(), goal_.y(), goal_.z());
+  RCLCPP_INFO(this->get_logger(),"===== Set Goal ======: [%f, %f, %f].", goal_.x(), goal_.y(), goal_.z());
   applyGoal();
 }
 void LocalPlanner::setPreviousGoal(const Eigen::Vector3f& prev_goal) { prev_goal_ = prev_goal; }
@@ -70,10 +71,10 @@ Eigen::Vector3f LocalPlanner::getGoal() const { return goal_; }
 void LocalPlanner::applyGoal() { star_planner_->setGoal(goal_); }
 
 void LocalPlanner::runPlanner() {
-  ROS_INFO("\033[1;35m[OA] Planning started, using %i cameras\n \033[0m",
+  RCLCPP_INFO(this->get_logger(), "\033[1;35m[OA] Planning started, using %i cameras\n \033[0m",
            static_cast<int>(original_cloud_vector_.size()));
 
-  float elapsed_since_last_processing = static_cast<float>((rclcpp::Clock().now(); - last_pointcloud_process_time_).toSec());
+  float elapsed_since_last_processing = static_cast<float>((rclcpp::Clock().now() - last_pointcloud_process_time_).seconds());
   processPointcloud(final_cloud_, original_cloud_vector_, fov_fcu_frame_, yaw_fcu_frame_deg_, pitch_fcu_frame_deg_,
                     position_, min_sensor_range_, max_sensor_range_, max_point_age_s_, elapsed_since_last_processing,
                     min_num_points_per_cell_);
@@ -148,7 +149,7 @@ void LocalPlanner::determineStrategy() {
 }
 
 void LocalPlanner::updateObstacleDistanceMsg(Histogram hist) {
-  sensor_msgs::LaserScan msg = {};
+  sensor_msgs::msg::LaserScan msg;
   msg.header.stamp = rclcpp::Clock().now();;
   msg.header.frame_id = "local_origin";
   msg.angle_increment = static_cast<double>(ALPHA_RES) * M_PI / 180.0;
@@ -173,8 +174,8 @@ void LocalPlanner::updateObstacleDistanceMsg(Histogram hist) {
 }
 
 void LocalPlanner::updateObstacleDistanceMsg() {
-  sensor_msgs::LaserScan msg = {};
-  msg.header.stamp = rclcpp::Clock().now();;
+  sensor_msgs::msg::LaserScan msg;
+  msg.header.stamp = rclcpp::Clock().now();
   msg.header.frame_id = "local_origin";
   msg.angle_increment = static_cast<double>(ALPHA_RES) * M_PI / 180.0;
   msg.range_min = min_sensor_range_;
@@ -194,7 +195,7 @@ void LocalPlanner::setDefaultPx4Parameters() {
   px4_.param_acc_up_max = 10.f;
   px4_.param_mpc_z_vel_max_up = 3.f;
   px4_.param_mpc_acc_down_max = 10.f;
-  px4_.param_mpc_vel_max_dn = 1.f;
+  // px4_.param_mpc_vel_max_dn = 1.f;
   px4_.param_mpc_acc_hor = 5.f;
   px4_.param_mpc_xy_cruise = 3.f;
   px4_.param_mpc_tko_speed = 1.f;
@@ -209,7 +210,7 @@ void LocalPlanner::getTree(std::vector<TreeNode>& tree, std::vector<int>& closed
   path_node_positions = star_planner_->path_node_positions_;
 }
 
-void LocalPlanner::getObstacleDistanceData(sensor_msgs::LaserScan& obstacle_distance) {
+void LocalPlanner::getObstacleDistanceData(sensor_msgs::msg::LaserScan& obstacle_distance) {
   obstacle_distance = distance_data_;
 }
 

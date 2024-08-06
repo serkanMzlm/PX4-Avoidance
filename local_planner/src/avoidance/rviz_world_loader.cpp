@@ -72,7 +72,7 @@ int WorldVisualizer::visualizeRVIZWorld(const std::string& world_path) {
     // convert object to marker
     visualization_msgs::msg::Marker m;
     m.header.frame_id = item.frame_id;
-    m.header.stamp = this->now();
+    m.header.stamp = rclcpp::Clock().now();;
 
     if (item.type == "mesh") {
       if (item.mesh_resource.find("model://") != std::string::npos) {
@@ -118,7 +118,7 @@ int WorldVisualizer::visualizeRVIZWorld(const std::string& world_path) {
     m.pose.orientation.z = item.orientation.z();
     m.pose.orientation.w = item.orientation.w();
     m.id = object_counter;
-    m.lifetime = rclcpp::Duration(0);
+    m.lifetime = rclcpp::Duration(0, 0);
     m.action = visualization_msgs::msg::Marker::ADD;
     marker_array.markers.push_back(m);
   }
@@ -157,7 +157,7 @@ int WorldVisualizer::visualizeDrone(const px4_msgs::msg::VehicleOdometry& pose) 
   drone.pose.orientation.z = pose.q[1];
   drone.pose.orientation.w = pose.q[2];
   drone.id = 0;
-  drone.lifetime = rclcpp::Duration(0);
+  drone.lifetime = rclcpp::Duration(0, 0);
   drone.action = visualization_msgs::msg::Marker::ADD;
 
   drone_pub_->publish(drone);

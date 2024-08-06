@@ -7,9 +7,14 @@
 #include "local_planner.h"
 #include "waypoint_generator.h"
 
-#include <pcl/point_cloud.h>
 #include <rclcpp/rclcpp.hpp>
+#include <pcl/point_cloud.h>
 #include <std_msgs/msg/u_int32.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include "sensor_msgs/msg/point_cloud2.hpp"
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <pcl_conversions/pcl_conversions.h>
 
 namespace avoidance {
 
@@ -47,7 +52,7 @@ class LocalPlannerVisualization {
   * @brief       Visualization of the goal position
   * @params[in]  goal, the loaction of the goal used in the planner calculations
   **/
-  void publishGoal(const geometry_msgs::Point& goal) const;
+  void publishGoal(const geometry_msgs::msg::Point& goal) const;
 
   /**
   * @brief       Visualization of the 2D compression of the local pointcloud
@@ -99,7 +104,7 @@ class LocalPlannerVisualization {
   *              visualization
   * @params[in]  newest_pos, location of the drone at the current timestep
   **/
-  void publishCurrentSetpoint(const geometry_msgs::Twist& wp, const PlannerState& waypoint_type,
+  void publishCurrentSetpoint(const geometry_msgs::msg::Twist& wp, const PlannerState& waypoint_type,
                               const Eigen::Vector3f& newest_position) const;
 
   /**
@@ -113,29 +118,29 @@ class LocalPlannerVisualization {
 
   void publishFOV(const std::vector<FOV>& fov, float max_range) const;
 
-  void publishRangeScan(const sensor_msgs::LaserScan& scan, const Eigen::Vector3f& newest_position) const;
+  void publishRangeScan(const sensor_msgs::msg::LaserScan& scan, const Eigen::Vector3f& newest_position) const;
 
  private:
-  ros::Publisher local_pointcloud_pub_;
-  ros::Publisher pointcloud_size_pub_;
-  ros::Publisher bounding_box_pub_;
-  ros::Publisher ground_measurement_pub_;
-  ros::Publisher original_wp_pub_;
-  ros::Publisher adapted_wp_pub_;
-  ros::Publisher smoothed_wp_pub_;
-  ros::Publisher complete_tree_pub_;
-  ros::Publisher tree_path_pub_;
-  ros::Publisher marker_goal_pub_;
-  ros::Publisher path_actual_pub_;
-  ros::Publisher path_waypoint_pub_;
-  ros::Publisher path_adapted_waypoint_pub_;
-  ros::Publisher current_waypoint_pub_;
-  ros::Publisher histogram_image_pub_;
-  ros::Publisher cost_image_pub_;
-  ros::Publisher closest_point_pub_;
-  ros::Publisher deg60_point_pub_;
-  ros::Publisher fov_pub_;
-  ros::Publisher range_scan_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr local_pointcloud_pub_;
+  rclcpp::Publisher<std_msgs::msg::UInt32>::SharedPtr pointcloud_size_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr bounding_box_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr ground_measurement_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr original_wp_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr adapted_wp_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr smoothed_wp_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr complete_tree_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr tree_path_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_goal_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr path_actual_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr path_waypoint_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr path_adapted_waypoint_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr current_waypoint_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr histogram_image_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr cost_image_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr closest_point_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr deg60_point_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr fov_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr range_scan_pub_;
 
   int path_length_ = 0;
 };

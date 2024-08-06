@@ -11,10 +11,9 @@
 #include <rclcpp/time.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
-#include <sensor_msgs/msg/image_encodings.hpp>
-#include <nav_msgs/GridCells.h>
-#include <nav_msgs/Path.h>
-
+#include <sensor_msgs/image_encodings.hpp>
+#include <nav_msgs/msg/grid_cells.hpp>
+#include <nav_msgs/msg/path.hpp>
 
 #include "avoidance/histogram.h"
 #include "avoidance_output.h"
@@ -27,7 +26,7 @@ namespace avoidance {
 class StarPlanner;
 class TreeNode;
 
-class LocalPlanner {
+class LocalPlanner: public rclcpp::Node {
  private:
   int children_per_node_;
   int n_expanded_nodes_;
@@ -42,8 +41,8 @@ class LocalPlanner {
 
   std::vector<FOV> fov_fcu_frame_;
 
-  ros::Time last_path_time_;
-  ros::Time last_pointcloud_process_time_;
+  rclcpp::Time last_path_time_;
+  rclcpp::Time last_pointcloud_process_time_;
 
   std::vector<int> closed_set_;
   std::vector<TreeNode> tree_;
@@ -95,7 +94,7 @@ class LocalPlanner {
 
   ModelParameters px4_;  // PX4 Firmware paramters
 
-  sensor_msgs::LaserScan distance_data_ = {};
+  sensor_msgs::msg::LaserScan distance_data_;
   Eigen::Vector3f last_sent_waypoint_ = Eigen::Vector3f::Zero();
 
   // original_cloud_vector_ contains n complete clouds from the cameras
@@ -153,7 +152,7 @@ class LocalPlanner {
   * @param     config, struct containing all the parameters
   * @param     level, bitmask to group together reconfigurable parameters
   **/
-  void dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level);
+  // void dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level);
 
   /**
   * @brief     getter method for current vehicle orientation
@@ -185,7 +184,7 @@ class LocalPlanner {
   * @brief     getter method for obstacle distance information
   * @param     obstacle_distance, obstacle distance message to fill
   **/
-  void getObstacleDistanceData(sensor_msgs::LaserScan& obstacle_distance);
+  void getObstacleDistanceData(sensor_msgs::msg::LaserScan& obstacle_distance);
 
   /**
   * @brief     getter method of the local planner algorithm

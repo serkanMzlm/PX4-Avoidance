@@ -4,7 +4,7 @@ namespace avoidance {
 
 namespace tf_buffer {
 
-TransformBuffer::TransformBuffer(float buffer_size_s) : buffer_size_(rclcpp::Duration(buffer_size_s)) {
+TransformBuffer::TransformBuffer(float buffer_size_s) : buffer_size_(rclcpp::Duration(buffer_size_s, 0)) {
   startup_time_ = rclcpp::Clock().now();
 };
 
@@ -103,7 +103,7 @@ bool TransformBuffer::getTransform(const std::string& source_frame, const std::s
 }
 
 void TransformBuffer::print(const log_level& level, const std::string& msg) const {
-  if (rclcpp::Clock().now() - startup_time_ > rclcpp::Duration(3)) {
+  if (rclcpp::Clock().now() - startup_time_ > rclcpp::Duration(3, 0)) {
     switch (level) {
       case error: {
         RCLCPP_ERROR(tf_logger_, "%s", msg.c_str());

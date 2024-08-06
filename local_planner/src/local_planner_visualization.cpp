@@ -4,33 +4,30 @@
 #include "planner_functions.h"
 #include "tree_node.h"
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-
 namespace avoidance {
 
 // initialize subscribers for local planner visualization topics
-void LocalPlannerVisualization::initializePublishers(ros::NodeHandle& nh) {
-  local_pointcloud_pub_ = nh.advertise<pcl::PointCloud<pcl::PointXYZ>>("/local_pointcloud", 1);
-  pointcloud_size_pub_ = nh.advertise<std_msgs::UInt32>("/pointcloud_size", 1);
-  bounding_box_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/bounding_box", 1);
-  ground_measurement_pub_ = nh.advertise<visualization_msgs::Marker>("/ground_measurement", 1);
-  original_wp_pub_ = nh.advertise<visualization_msgs::Marker>("/original_waypoint", 1);
-  adapted_wp_pub_ = nh.advertise<visualization_msgs::Marker>("/adapted_waypoint", 1);
-  smoothed_wp_pub_ = nh.advertise<visualization_msgs::Marker>("/smoothed_waypoint", 1);
-  complete_tree_pub_ = nh.advertise<visualization_msgs::Marker>("/complete_tree", 1);
-  tree_path_pub_ = nh.advertise<visualization_msgs::Marker>("/tree_path", 1);
-  marker_goal_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/goal_position", 1);
-  path_actual_pub_ = nh.advertise<visualization_msgs::Marker>("/path_actual", 1);
-  path_waypoint_pub_ = nh.advertise<visualization_msgs::Marker>("/path_waypoint", 1);
-  path_adapted_waypoint_pub_ = nh.advertise<visualization_msgs::Marker>("/path_adapted_waypoint", 1);
-  current_waypoint_pub_ = nh.advertise<visualization_msgs::Marker>("/current_setpoint", 1);
-  histogram_image_pub_ = nh.advertise<sensor_msgs::Image>("/histogram_image", 1);
-  cost_image_pub_ = nh.advertise<sensor_msgs::Image>("/cost_image", 1);
-  closest_point_pub_ = nh.advertise<visualization_msgs::Marker>("/closest_point", 1);
-  deg60_point_pub_ = nh.advertise<visualization_msgs::Marker>("/deg60_point", 1);
-  fov_pub_ = nh.advertise<visualization_msgs::Marker>("/fov", 4);
-  range_scan_pub_ = nh.advertise<visualization_msgs::Marker>("/range_scan", 1);
+void LocalPlannerVisualization::initializePublishers(rclcpp::Node& nh) {
+  local_pointcloud_pub_   = nh.create_publisher<sensor_msgs::msg::PointCloud2>("/local_pointcloud", 10);
+  pointcloud_size_pub_    = nh.create_publisher<std_msgs::msg::UInt32>("/pointcloud_size", 10);
+  bounding_box_pub_       = nh.create_publisher<visualization_msgs::msg::MarkerArray>("/bounding_box", 10);
+  ground_measurement_pub_ = nh.create_publisher<visualization_msgs::msg::Marker>("/ground_measurement", 10);
+  original_wp_pub_        = nh.create_publisher<visualization_msgs::msg::Marker>("/original_waypoint", 10);
+  adapted_wp_pub_         = nh.create_publisher<visualization_msgs::msg::Marker>("/adapted_waypoint", 10);
+  smoothed_wp_pub_        = nh.create_publisher<visualization_msgs::msg::Marker>("/smoothed_waypoint", 10);
+  complete_tree_pub_      = nh.create_publisher<visualization_msgs::msg::Marker>("/complete_tree", 10);
+  tree_path_pub_          = nh.create_publisher<visualization_msgs::msg::Marker>("/tree_path", 10);
+  marker_goal_pub_        = nh.create_publisher<visualization_msgs::msg::MarkerArray>("/goal_position", 10);
+  path_actual_pub_        = nh.create_publisher<visualization_msgs::msg::Marker>("/path_actual", 10);
+  path_waypoint_pub_      = nh.create_publisher<visualization_msgs::msg::Marker>("/path_waypoint", 10);
+  path_adapted_waypoint_pub_ = nh.create_publisher<visualization_msgs::msg::Marker>("/path_adapted_waypoint", 10);
+  current_waypoint_pub_      = nh.create_publisher<visualization_msgs::msg::Marker>("/current_setpoint", 10);
+  histogram_image_pub_       = nh.create_publisher<sensor_msgs::msg::Image>("/histogram_image", 10);
+  cost_image_pub_            = nh.create_publisher<sensor_msgs::msg::Image>("/cost_image", 10);
+  closest_point_pub_         = nh.create_publisher<visualization_msgs::msg::Marker>("/closest_point", 10);
+  deg60_point_pub_           = nh.create_publisher<visualization_msgs::msg::Marker>("/deg60_point", 10);
+  fov_pub_                   = nh.create_publisher<visualization_msgs::msg::Marker>("/fov", 40);
+  range_scan_pub_            = nh.create_publisher<visualization_msgs::msg::Marker>("/range_scan", 10);
 }
 
 void LocalPlannerVisualization::visualizePlannerData(const LocalPlanner& planner,
@@ -39,10 +36,11 @@ void LocalPlannerVisualization::visualizePlannerData(const LocalPlanner& planner
                                                      const Eigen::Vector3f& newest_position,
                                                      const Eigen::Quaternionf& newest_orientation) const {
   // visualize clouds
-  local_pointcloud_pub_.publish(planner.getPointcloud());
-  std_msgs::UInt32 msg;
+  // sensor_msgs::msg::PointCloud2 ros2_cloud = toROSMsg(planner.getPointcloud());
+  // local_pointcloud_pub_->publish(ros2_cloud);
+  std_msgs::msg::UInt32 msg;
   msg.data = static_cast<uint32_t>(planner.getPointcloud().size());
-  pointcloud_size_pub_.publish(msg);
+  pointcloud_size_pub_->publish(msg);
 
   // visualize tree calculation
   std::vector<TreeNode> tree;
@@ -77,12 +75,12 @@ void LocalPlannerVisualization::publishFOV(const std::vector<FOV>& fov_vec, floa
     PolarPoint p4(fov_vec[i].pitch_deg - fov_vec[i].v_fov_deg / 2.f, fov_vec[i].yaw_deg - fov_vec[i].h_fov_deg / 2.f,
                   max_range);
 
-    visualization_msgs::Marker m;
+    visualization_msgs::msg::Marker m;
     m.header.frame_id = "fcu";
     m.header.stamp = rclcpp::Clock().now();;
     m.id = i;
-    m.type = visualization_msgs::Marker::TRIANGLE_LIST;
-    m.action = visualization_msgs::Marker::ADD;
+    m.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
+    m.action = visualization_msgs::msg::Marker::ADD;
     m.scale.x = 1.0;
     m.scale.y = 1.0;
     m.scale.z = 1.0;
@@ -108,18 +106,18 @@ void LocalPlannerVisualization::publishFOV(const std::vector<FOV>& fov_vec, floa
     m.points.push_back(toPoint(polarFCUToCartesian(p4, drone_pos)));
     m.points.push_back(toPoint(polarFCUToCartesian(p1, drone_pos)));
 
-    fov_pub_.publish(m);
+    fov_pub_->publish(m);
   }
 }
 
-void LocalPlannerVisualization::publishRangeScan(const sensor_msgs::LaserScan& scan,
+void LocalPlannerVisualization::publishRangeScan(const sensor_msgs::msg::LaserScan& scan,
                                                  const Eigen::Vector3f& newest_position) const {
-  visualization_msgs::Marker m;
+  visualization_msgs::msg::Marker m;
   m.header.frame_id = "local_origin";
   m.header.stamp = rclcpp::Clock().now();;
   m.id = 0;
-  m.type = visualization_msgs::Marker::TRIANGLE_LIST;
-  m.action = visualization_msgs::Marker::ADD;
+  m.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
+  m.action = visualization_msgs::msg::Marker::ADD;
   m.scale.x = 1.0;
   m.scale.y = 1.0;
   m.scale.z = 1.0;
@@ -128,7 +126,7 @@ void LocalPlannerVisualization::publishRangeScan(const sensor_msgs::LaserScan& s
   m.color.g = 1.0;
   m.color.b = 1.0;
 
-  std_msgs::ColorRGBA c;
+  std_msgs::msg::ColorRGBA c;
   c.a = 0.7;
 
   for (int i = 0; i < scan.ranges.size(); ++i) {
@@ -159,16 +157,16 @@ void LocalPlannerVisualization::publishRangeScan(const sensor_msgs::LaserScan& s
     m.points.push_back(toPoint(polarHistogramToCartesian(p2, newest_position)));
   }
 
-  range_scan_pub_.publish(m);
+  range_scan_pub_->publish(m);
 }
 
 void LocalPlannerVisualization::publishOfftrackPoints(Eigen::Vector3f& closest_pt, Eigen::Vector3f& deg60_pt) {
-  visualization_msgs::Marker m;
+  visualization_msgs::msg::Marker m;
 
   m.header.frame_id = "local_origin";
   m.header.stamp = rclcpp::Clock().now();;
-  m.type = visualization_msgs::Marker::SPHERE;
-  m.action = visualization_msgs::Marker::ADD;
+  m.type = visualization_msgs::msg::Marker::SPHERE;
+  m.action = visualization_msgs::msg::Marker::ADD;
   m.scale.x = 0.2;
   m.scale.y = 0.2;
   m.scale.z = 0.2;
@@ -176,12 +174,12 @@ void LocalPlannerVisualization::publishOfftrackPoints(Eigen::Vector3f& closest_p
   m.color.r = 1.0;
   m.color.g = 0.0;
   m.color.b = 0.0;
-  m.lifetime = ros::Duration();
+  m.lifetime = rclcpp::Duration(0, 0);
   m.id = 0;
   m.pose.position.x = closest_pt.x();
   m.pose.position.y = closest_pt.y();
   m.pose.position.z = closest_pt.z();
-  closest_point_pub_.publish(m);
+  closest_point_pub_->publish(m);
 
   m.color.r = 0.0;
   m.color.g = 0.0;
@@ -189,17 +187,17 @@ void LocalPlannerVisualization::publishOfftrackPoints(Eigen::Vector3f& closest_p
   m.pose.position.x = deg60_pt.x();
   m.pose.position.y = deg60_pt.y();
   m.pose.position.z = deg60_pt.z();
-  deg60_point_pub_.publish(m);
+  deg60_point_pub_->publish(m);
 }
 
 void LocalPlannerVisualization::publishTree(const std::vector<TreeNode>& tree, const std::vector<int>& closed_set,
                                             const std::vector<Eigen::Vector3f>& path_node_positions) const {
-  visualization_msgs::Marker tree_marker;
+  visualization_msgs::msg::Marker tree_marker;
   tree_marker.header.frame_id = "local_origin";
   tree_marker.header.stamp = rclcpp::Clock().now();;
   tree_marker.id = 0;
-  tree_marker.type = visualization_msgs::Marker::LINE_LIST;
-  tree_marker.action = visualization_msgs::Marker::ADD;
+  tree_marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+  tree_marker.action = visualization_msgs::msg::Marker::ADD;
   tree_marker.pose.orientation.w = 1.0;
   tree_marker.scale.x = 0.05;
   tree_marker.color.a = 0.8;
@@ -207,12 +205,12 @@ void LocalPlannerVisualization::publishTree(const std::vector<TreeNode>& tree, c
   tree_marker.color.g = 0.0;
   tree_marker.color.b = 0.6;
 
-  visualization_msgs::Marker path_marker;
+  visualization_msgs::msg::Marker path_marker;
   path_marker.header.frame_id = "local_origin";
   path_marker.header.stamp = rclcpp::Clock().now();;
   path_marker.id = 0;
-  path_marker.type = visualization_msgs::Marker::LINE_LIST;
-  path_marker.action = visualization_msgs::Marker::ADD;
+  path_marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+  path_marker.action = visualization_msgs::msg::Marker::ADD;
   path_marker.pose.orientation.w = 1.0;
   path_marker.scale.x = 0.05;
   path_marker.color.a = 0.8;
@@ -223,9 +221,9 @@ void LocalPlannerVisualization::publishTree(const std::vector<TreeNode>& tree, c
   tree_marker.points.reserve(closed_set.size() * 2);
   for (size_t i = 0; i < closed_set.size(); i++) {
     int node_nr = closed_set[i];
-    geometry_msgs::Point p1 = toPoint(tree[node_nr].getPosition());
+    geometry_msgs::msg::Point p1 = toPoint(tree[node_nr].getPosition());
     int origin = tree[node_nr].origin_;
-    geometry_msgs::Point p2 = toPoint(tree[origin].getPosition());
+    geometry_msgs::msg::Point p2 = toPoint(tree[origin].getPosition());
     tree_marker.points.push_back(p1);
     tree_marker.points.push_back(p2);
   }
@@ -236,18 +234,18 @@ void LocalPlannerVisualization::publishTree(const std::vector<TreeNode>& tree, c
     path_marker.points.push_back(toPoint(path_node_positions[i]));
   }
 
-  complete_tree_pub_.publish(tree_marker);
-  tree_path_pub_.publish(path_marker);
+  complete_tree_pub_->publish(tree_marker);
+  tree_path_pub_->publish(path_marker);
 }
 
-void LocalPlannerVisualization::publishGoal(const geometry_msgs::Point& goal) const {
-  visualization_msgs::MarkerArray marker_goal;
-  visualization_msgs::Marker m;
+void LocalPlannerVisualization::publishGoal(const geometry_msgs::msg::Point& goal) const {
+  visualization_msgs::msg::MarkerArray marker_goal;
+  visualization_msgs::msg::Marker m;
 
   m.header.frame_id = "local_origin";
   m.header.stamp = rclcpp::Clock().now();;
-  m.type = visualization_msgs::Marker::SPHERE;
-  m.action = visualization_msgs::Marker::ADD;
+  m.type = visualization_msgs::msg::Marker::SPHERE;
+  m.action = visualization_msgs::msg::Marker::ADD;
   m.scale.x = 0.5;
   m.scale.y = 0.5;
   m.scale.z = 0.5;
@@ -255,11 +253,11 @@ void LocalPlannerVisualization::publishGoal(const geometry_msgs::Point& goal) co
   m.color.r = 1.0;
   m.color.g = 1.0;
   m.color.b = 0.0;
-  m.lifetime = ros::Duration();
+  m.lifetime = rclcpp::Duration(0, 0);
   m.id = 0;
   m.pose.position = goal;
   marker_goal.markers.push_back(m);
-  marker_goal_pub_.publish(marker_goal);
+  marker_goal_pub_->publish(marker_goal);
 }
 
 void LocalPlannerVisualization::publishDataImages(const std::vector<uint8_t>& histogram_image_data,
@@ -268,7 +266,7 @@ void LocalPlannerVisualization::publishDataImages(const std::vector<uint8_t>& hi
                                                   const Eigen::Vector3f& newest_adapted_waypoint_position,
                                                   const Eigen::Vector3f& newest_position,
                                                   const Eigen::Quaternionf newest_orientation) const {
-  sensor_msgs::Image cost_img;
+  sensor_msgs::msg::Image cost_img;
   cost_img.header.stamp = rclcpp::Clock().now();;
   cost_img.height = GRID_LENGTH_E;
   cost_img.width = GRID_LENGTH_Z;
@@ -305,7 +303,7 @@ void LocalPlannerVisualization::publishDataImages(const std::vector<uint8_t>& hi
   }
 
   // histogram image
-  sensor_msgs::Image hist_img;
+  sensor_msgs::msg::Image hist_img;
   hist_img.header.stamp = rclcpp::Clock().now();;
   hist_img.height = GRID_LENGTH_E;
   hist_img.width = GRID_LENGTH_Z;
@@ -314,24 +312,22 @@ void LocalPlannerVisualization::publishDataImages(const std::vector<uint8_t>& hi
   hist_img.step = 255;
   hist_img.data = histogram_image_data;
 
-  histogram_image_pub_.publish(hist_img);
-  cost_image_pub_.publish(cost_img);
+  histogram_image_pub_->publish(hist_img);
+  cost_image_pub_->publish(cost_img);
 }
 
 void LocalPlannerVisualization::visualizeWaypoints(const Eigen::Vector3f& goto_position,
                                                    const Eigen::Vector3f& adapted_goto_position,
                                                    const Eigen::Vector3f& smoothed_goto_position) const {
-  visualization_msgs::Marker sphere1;
-  visualization_msgs::Marker sphere2;
-  visualization_msgs::Marker sphere3;
-
-  ros::Time now = rclcpp::Clock().now();;
+  visualization_msgs::msg::Marker sphere1;
+  visualization_msgs::msg::Marker sphere2;
+  visualization_msgs::msg::Marker sphere3;
 
   sphere1.header.frame_id = "local_origin";
-  sphere1.header.stamp = now;
+  sphere1.header.stamp = rclcpp::Clock().now();
   sphere1.id = 0;
-  sphere1.type = visualization_msgs::Marker::SPHERE;
-  sphere1.action = visualization_msgs::Marker::ADD;
+  sphere1.type = visualization_msgs::msg::Marker::SPHERE;
+  sphere1.action = visualization_msgs::msg::Marker::ADD;
   sphere1.pose.position = toPoint(goto_position);
   sphere1.pose.orientation.x = 0.0;
   sphere1.pose.orientation.y = 0.0;
@@ -346,10 +342,10 @@ void LocalPlannerVisualization::visualizeWaypoints(const Eigen::Vector3f& goto_p
   sphere1.color.b = 0.0;
 
   sphere2.header.frame_id = "local_origin";
-  sphere2.header.stamp = now;
+  sphere2.header.stamp = rclcpp::Clock().now();;
   sphere2.id = 0;
-  sphere2.type = visualization_msgs::Marker::SPHERE;
-  sphere2.action = visualization_msgs::Marker::ADD;
+  sphere2.type = visualization_msgs::msg::Marker::SPHERE;
+  sphere2.action = visualization_msgs::msg::Marker::ADD;
   sphere2.pose.position = toPoint(adapted_goto_position);
   sphere2.pose.orientation.x = 0.0;
   sphere2.pose.orientation.y = 0.0;
@@ -364,10 +360,10 @@ void LocalPlannerVisualization::visualizeWaypoints(const Eigen::Vector3f& goto_p
   sphere2.color.b = 0.0;
 
   sphere3.header.frame_id = "local_origin";
-  sphere3.header.stamp = now;
+  sphere3.header.stamp = rclcpp::Clock().now();;
   sphere3.id = 0;
-  sphere3.type = visualization_msgs::Marker::SPHERE;
-  sphere3.action = visualization_msgs::Marker::ADD;
+  sphere3.type = visualization_msgs::msg::Marker::SPHERE;
+  sphere3.action = visualization_msgs::msg::Marker::ADD;
   sphere3.pose.position = toPoint(smoothed_goto_position);
   sphere3.pose.orientation.x = 0.0;
   sphere3.pose.orientation.y = 0.0;
@@ -381,9 +377,9 @@ void LocalPlannerVisualization::visualizeWaypoints(const Eigen::Vector3f& goto_p
   sphere3.color.g = 0.5;
   sphere3.color.b = 0.0;
 
-  original_wp_pub_.publish(sphere1);
-  adapted_wp_pub_.publish(sphere2);
-  smoothed_wp_pub_.publish(sphere3);
+  original_wp_pub_->publish(sphere1);
+  adapted_wp_pub_->publish(sphere2);
+  smoothed_wp_pub_->publish(sphere3);
 }
 
 void LocalPlannerVisualization::publishPaths(const Eigen::Vector3f& last_position,
@@ -391,12 +387,12 @@ void LocalPlannerVisualization::publishPaths(const Eigen::Vector3f& last_positio
                                              const Eigen::Vector3f& newest_wp, const Eigen::Vector3f& last_adapted_wp,
                                              const Eigen::Vector3f& newest_adapted_wp) {
   // publish actual path
-  visualization_msgs::Marker path_actual_marker;
+  visualization_msgs::msg::Marker path_actual_marker;
   path_actual_marker.header.frame_id = "local_origin";
   path_actual_marker.header.stamp = rclcpp::Clock().now();;
   path_actual_marker.id = path_length_;
-  path_actual_marker.type = visualization_msgs::Marker::LINE_STRIP;
-  path_actual_marker.action = visualization_msgs::Marker::ADD;
+  path_actual_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  path_actual_marker.action = visualization_msgs::msg::Marker::ADD;
   path_actual_marker.pose.orientation.w = 1.0;
   path_actual_marker.scale.x = 0.03;
   path_actual_marker.color.a = 1.0;
@@ -406,15 +402,15 @@ void LocalPlannerVisualization::publishPaths(const Eigen::Vector3f& last_positio
 
   path_actual_marker.points.push_back(toPoint(last_position));
   path_actual_marker.points.push_back(toPoint(newest_position));
-  path_actual_pub_.publish(path_actual_marker);
+  path_actual_pub_->publish(path_actual_marker);
 
   // publish path set by calculated waypoints
-  visualization_msgs::Marker path_waypoint_marker;
+  visualization_msgs::msg::Marker path_waypoint_marker;
   path_waypoint_marker.header.frame_id = "local_origin";
   path_waypoint_marker.header.stamp = rclcpp::Clock().now();;
   path_waypoint_marker.id = path_length_;
-  path_waypoint_marker.type = visualization_msgs::Marker::LINE_STRIP;
-  path_waypoint_marker.action = visualization_msgs::Marker::ADD;
+  path_waypoint_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  path_waypoint_marker.action = visualization_msgs::msg::Marker::ADD;
   path_waypoint_marker.pose.orientation.w = 1.0;
   path_waypoint_marker.scale.x = 0.02;
   path_waypoint_marker.color.a = 1.0;
@@ -424,15 +420,15 @@ void LocalPlannerVisualization::publishPaths(const Eigen::Vector3f& last_positio
 
   path_waypoint_marker.points.push_back(toPoint(last_wp));
   path_waypoint_marker.points.push_back(toPoint(newest_wp));
-  path_waypoint_pub_.publish(path_waypoint_marker);
+  path_waypoint_pub_->publish(path_waypoint_marker);
 
   // publish path set by calculated waypoints
-  visualization_msgs::Marker path_adapted_waypoint_marker;
+  visualization_msgs::msg::Marker path_adapted_waypoint_marker;
   path_adapted_waypoint_marker.header.frame_id = "local_origin";
   path_adapted_waypoint_marker.header.stamp = rclcpp::Clock().now();;
   path_adapted_waypoint_marker.id = path_length_;
-  path_adapted_waypoint_marker.type = visualization_msgs::Marker::LINE_STRIP;
-  path_adapted_waypoint_marker.action = visualization_msgs::Marker::ADD;
+  path_adapted_waypoint_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+  path_adapted_waypoint_marker.action = visualization_msgs::msg::Marker::ADD;
   path_adapted_waypoint_marker.pose.orientation.w = 1.0;
   path_adapted_waypoint_marker.scale.x = 0.02;
   path_adapted_waypoint_marker.color.a = 1.0;
@@ -442,23 +438,23 @@ void LocalPlannerVisualization::publishPaths(const Eigen::Vector3f& last_positio
 
   path_adapted_waypoint_marker.points.push_back(toPoint(last_adapted_wp));
   path_adapted_waypoint_marker.points.push_back(toPoint(newest_adapted_wp));
-  path_adapted_waypoint_pub_.publish(path_adapted_waypoint_marker);
+  path_adapted_waypoint_pub_->publish(path_adapted_waypoint_marker);
 
   path_length_++;
 }
 
-void LocalPlannerVisualization::publishCurrentSetpoint(const geometry_msgs::Twist& wp,
+void LocalPlannerVisualization::publishCurrentSetpoint(const geometry_msgs::msg::Twist& wp,
                                                        const PlannerState& waypoint_type,
                                                        const Eigen::Vector3f& newest_position) const {
-  visualization_msgs::Marker setpoint;
+  visualization_msgs::msg::Marker setpoint;
   setpoint.header.frame_id = "local_origin";
   setpoint.header.stamp = rclcpp::Clock().now();;
   setpoint.id = 0;
-  setpoint.type = visualization_msgs::Marker::ARROW;
-  setpoint.action = visualization_msgs::Marker::ADD;
+  setpoint.type = visualization_msgs::msg::Marker::ARROW;
+  setpoint.action = visualization_msgs::msg::Marker::ADD;
 
-  geometry_msgs::Point tip;
-  geometry_msgs::Point newest_pos;
+  geometry_msgs::msg::Point tip;
+  geometry_msgs::msg::Point newest_pos;
 
   newest_pos.x = newest_position(0);
   newest_pos.y = newest_position(1);
@@ -500,6 +496,6 @@ void LocalPlannerVisualization::publishCurrentSetpoint(const geometry_msgs::Twis
     }
   }
 
-  current_waypoint_pub_.publish(setpoint);
+  current_waypoint_pub_->publish(setpoint);
 }
 }
