@@ -8,8 +8,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-
-
 #include <rclcpp/time.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
@@ -23,7 +21,6 @@
 #include "candidate_direction.h"
 #include "cost_parameters.h"
 #include "planner_functions.h"
-
 
 namespace avoidance {
 

@@ -73,11 +73,11 @@ void LocalPlanner::runPlanner() {
   ROS_INFO("\033[1;35m[OA] Planning started, using %i cameras\n \033[0m",
            static_cast<int>(original_cloud_vector_.size()));
 
-  float elapsed_since_last_processing = static_cast<float>((ros::Time::now() - last_pointcloud_process_time_).toSec());
+  float elapsed_since_last_processing = static_cast<float>((rclcpp::Clock().now(); - last_pointcloud_process_time_).toSec());
   processPointcloud(final_cloud_, original_cloud_vector_, fov_fcu_frame_, yaw_fcu_frame_deg_, pitch_fcu_frame_deg_,
                     position_, min_sensor_range_, max_sensor_range_, max_point_age_s_, elapsed_since_last_processing,
                     min_num_points_per_cell_);
-  last_pointcloud_process_time_ = ros::Time::now();
+  last_pointcloud_process_time_ = rclcpp::Clock().now();;
 
   determineStrategy();
 }
@@ -143,13 +143,13 @@ void LocalPlanner::determineStrategy() {
 
     // build search tree
     star_planner_->buildLookAheadTree();
-    last_path_time_ = ros::Time::now();
+    last_path_time_ = rclcpp::Clock().now();;
   }
 }
 
 void LocalPlanner::updateObstacleDistanceMsg(Histogram hist) {
   sensor_msgs::LaserScan msg = {};
-  msg.header.stamp = ros::Time::now();
+  msg.header.stamp = rclcpp::Clock().now();;
   msg.header.frame_id = "local_origin";
   msg.angle_increment = static_cast<double>(ALPHA_RES) * M_PI / 180.0;
   msg.range_min = min_sensor_range_;
@@ -174,7 +174,7 @@ void LocalPlanner::updateObstacleDistanceMsg(Histogram hist) {
 
 void LocalPlanner::updateObstacleDistanceMsg() {
   sensor_msgs::LaserScan msg = {};
-  msg.header.stamp = ros::Time::now();
+  msg.header.stamp = rclcpp::Clock().now();;
   msg.header.frame_id = "local_origin";
   msg.angle_increment = static_cast<double>(ALPHA_RES) * M_PI / 180.0;
   msg.range_min = min_sensor_range_;
