@@ -15,7 +15,7 @@
 #include <nav_msgs/msg/grid_cells.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include "avoidance/histogram.h"
+#include "histogram.h"
 #include "avoidance_output.h"
 #include "candidate_direction.h"
 #include "cost_parameters.h"

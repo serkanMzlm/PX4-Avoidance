@@ -2,7 +2,7 @@
 #define STAR_PLANNER_H
 
 #include <rclcpp/rclcpp.hpp>
-#include "avoidance/histogram.h"
+#include "histogram.h"
 #include "cost_parameters.h"
 
 #include <Eigen/Dense>

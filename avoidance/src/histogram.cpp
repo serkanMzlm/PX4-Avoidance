@@ -1,4 +1,4 @@
-#include "avoidance/histogram.h"
+#include "histogram.h"
 #include <stdexcept>
 
 namespace avoidance {

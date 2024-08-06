@@ -1,8 +1,8 @@
 #ifndef WAYPOINT_GENERATOR_H
 #define WAYPOINT_GENERATOR_H
 
-#include <avoidance/usm.h>
-#include "avoidance/common.h"
+#include "usm.h"
+#include "common.h"
 #include "avoidance_output.h"
 
 #include <Eigen/Dense>

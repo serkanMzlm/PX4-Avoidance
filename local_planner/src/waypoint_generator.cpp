@@ -1,6 +1,6 @@
 #include "waypoint_generator.h"
 
-#include "avoidance/common.h"
+#include "common.h"
 #include "planner_functions.h"
 
 #define normXY() topRows<2>().norm()

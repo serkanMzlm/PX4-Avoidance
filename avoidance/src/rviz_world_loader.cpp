@@ -1,4 +1,4 @@
-#include "avoidance/rviz_world_loader.h"
+#include "rviz_world_loader.h"
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;

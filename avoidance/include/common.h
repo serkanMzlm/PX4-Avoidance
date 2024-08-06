@@ -9,7 +9,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include "avoidance/histogram.h"  // needed for ALPHA_RES
+#include "histogram.h"  // needed for ALPHA_RES
 
 #include <tf2/utils.h>
 #include <rclcpp/rclcpp.hpp>

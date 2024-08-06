@@ -1,4 +1,4 @@
-#include "avoidance/avoidance_node.h"
+#include "avoidance_node.h"
 
 #include <thread>
 

@@ -3,7 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "avoidance/common.h"
+#include "common.h"
 #include <px4_msgs/msg/telemetry_status.hpp>
 
 #include <chrono>

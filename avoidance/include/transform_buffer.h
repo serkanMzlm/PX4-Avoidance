@@ -10,7 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <avoidance/common.h>
+#include <common.h>
 
 namespace avoidance {
 
