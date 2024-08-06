@@ -154,6 +154,8 @@ class LocalPlanner: public rclcpp::Node {
   **/
   // void dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level);
 
+  void initParam();
+
   /**
   * @brief     getter method for current vehicle orientation
   * @returns   vehicle orientation in the fcu convention of the world frame

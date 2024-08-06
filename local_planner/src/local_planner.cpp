@@ -22,33 +22,47 @@ void LocalPlanner::setState(const Eigen::Vector3f& pos, const Eigen::Vector3f& v
   star_planner_->setPose(position_, velocity_);
 }
 
-// set parameters changed by dynamic rconfigure
-// void LocalPlanner::dynamicReconfigureSetParams(avoidance::LocalPlannerNodeConfig& config, uint32_t level) {
-//   max_sensor_range_ = static_cast<float>(config.max_sensor_range_);
-//   cost_params_.pitch_cost_param = config.pitch_cost_param_;
-//   cost_params_.yaw_cost_param = config.yaw_cost_param_;
-//   cost_params_.velocity_cost_param = config.velocity_cost_param_;
-//   cost_params_.obstacle_cost_param = config.obstacle_cost_param_;
-//   max_point_age_s_ = static_cast<float>(config.max_point_age_s_);
-//   min_num_points_per_cell_ = config.min_num_points_per_cell_;
-//   min_sensor_range_ = static_cast<float>(config.min_sensor_range_);
-//   timeout_startup_ = config.timeout_startup_;
-//   timeout_critical_ = config.timeout_critical_;
-//   timeout_termination_ = config.timeout_termination_;
-//   children_per_node_ = config.children_per_node_;
-//   n_expanded_nodes_ = config.n_expanded_nodes_;
-//   smoothing_margin_degrees_ = static_cast<float>(config.smoothing_margin_degrees_);
+void LocalPlanner::initParam()
+{
+  this->declare_parameter<double>("max_sensor_range_", 15.0);
+  this->declare_parameter<double>("min_sensor_range_", 0.2);
+  this->declare_parameter<double>("pitch_cost_param_", 25.0);
+  this->declare_parameter<double>("yaw_cost_param_", 3.0);
+  this->declare_parameter<double>("velocity_cost_param_", 3.0);
+  this->declare_parameter<double>("obstacle_cost_param_", 8.5);
+  this->declare_parameter<double>("max_point_age_s_", 20.0);
+  this->declare_parameter<double>("min_num_points_per_cell_", 25);
+  this->declare_parameter<double>("timeout_startup_", 5.0);
+  this->declare_parameter<double>("timeout_critical_", 0.5);
+  this->declare_parameter<double>("timeout_termination_", 15.0);
+  this->declare_parameter<double>("children_per_node_", 8);
+  this->declare_parameter<double>("n_expanded_nodes_", 10);
+  this->declare_parameter<double>("smoothing_margin_degrees_", 40.0);
+  this->declare_parameter<double>("goal_z_param", 3.5);
 
-//   if (getGoal().z() != config.goal_z_param) {
-//     auto goal = getGoal();
-//     goal.z() = config.goal_z_param;
-//     setGoal(goal);
-//   }
 
-//   star_planner_->dynamicReconfigureSetStarParams(config, level);
+  max_sensor_range_               = this->get_parameter("max_sensor_range_").as_double();
+  min_sensor_range_                = this->get_parameter("min_sensor_range_").as_double();
+  cost_params_.pitch_cost_param   = this->get_parameter("pitch_cost_param_").as_double();
+  cost_params_.yaw_cost_param     = this->get_parameter("yaw_cost_param").as_double();
+  cost_params_.velocity_cost_param = this->get_parameter("velocity_cost_param_").as_double();
+  cost_params_.obstacle_cost_param = this->get_parameter("obstacle_cost_param_").as_double();
+  max_point_age_s_                 = this->get_parameter("max_point_age_s_").as_double();
+  min_num_points_per_cell_         = this->get_parameter("min_num_points_per_cell_").as_int();
+  timeout_startup_                 = this->get_parameter("timeout_startup_").as_double();
+  timeout_critical_                = this->get_parameter("timeout_critical_").as_double();
+  timeout_termination_             = this->get_parameter("timeout_termination_").as_double();
+  children_per_node_               = this->get_parameter("children_per_node_").as_int();
+  n_expanded_nodes_                = this->get_parameter("n_expanded_nodes_").as_int();
+  smoothing_margin_degrees_        = this->get_parameter("smoothing_margin_degrees_").as_double();
 
-//   ROS_DEBUG("\033[0;35m[OA] Dynamic reconfigure call \033[0m");
-// }
+  if (getGoal().z() != this->get_parameter("goal_z_param").as_double()) {
+    auto goal = getGoal();
+    goal.z() = this->get_parameter("goal_z_param").as_double();
+    setGoal(goal);
+  }
+
+}
 
 void LocalPlanner::setGoal(const Eigen::Vector3f& goal) {
   goal_ = goal;

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 project(local_planner)
 
-# if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#   add_compile_options(-Wall -Wextra -Wpedantic)
-# endif()
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -52,5 +52,17 @@ ament_target_dependencies(
   avoidance
 )
 target_link_libraries(local_planner_node Eigen3::Eigen yaml-cpp)
+
+install(
+  DIRECTORY 
+  launch
+  DESTINATION  
+  share/${PROJECT_NAME}/
+)
+
+install(TARGETS
+  local_planner_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
