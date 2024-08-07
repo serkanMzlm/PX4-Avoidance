@@ -9,17 +9,17 @@
 #include <pcl/point_types.h>
 
 #include <rclcpp/time.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <nav_msgs/msg/grid_cells.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
 #include <sensor_msgs/image_encodings.hpp>
-#include <nav_msgs/msg/grid_cells.hpp>
-#include <nav_msgs/msg/path.hpp>
 
 #include "histogram.h"
-#include "avoidance_output.h"
-#include "candidate_direction.h"
 #include "cost_parameters.h"
+#include "avoidance_output.h"
 #include "planner_functions.h"
+#include "candidate_direction.h"
 
 namespace avoidance {
 

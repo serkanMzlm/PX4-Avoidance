@@ -7,14 +7,14 @@
 #include "local_planner.h"
 #include "waypoint_generator.h"
 
-#include <rclcpp/rclcpp.hpp>
 #include <pcl/point_cloud.h>
+#include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/u_int32.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include "sensor_msgs/msg/point_cloud2.hpp"
+#include <pcl_conversions/pcl_conversions.h>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-#include <pcl_conversions/pcl_conversions.h>
 
 namespace avoidance {
 
