@@ -1,10 +1,10 @@
 #ifndef HISTOGRAM_H
 #define HISTOGRAM_H
 
-#include <float.h>
-#include <math.h>
-#include <Eigen/Dense>
 #include <vector>
+#include <math.h>
+#include <float.h>
+#include <Eigen/Dense>
 
 namespace avoidance {
 
