@@ -1,18 +1,18 @@
-#ifndef LOCAL_PLANNER_FUNCTIONS_H
-#define LOCAL_PLANNER_FUNCTIONS_H
+#ifndef __LOCAL_PLANNER_FUNCTIONS_H__
+#define __LOCAL_PLANNER_FUNCTIONS_H__
 
 #include "common.h"
 #include "histogram.h"
-#include "candidate_direction.h"
-#include "cost_parameters.h"
+#include "local_planner_type.h"
 
 #include <Eigen/Dense>
+#include <queue>
+#include <vector>
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <queue>
-#include <vector>
+#include  <rclcpp/rclcpp.hpp>
 
 namespace avoidance {
 

@@ -3,7 +3,6 @@
 #include <numeric>
 
 namespace avoidance {
-
 // trim the point cloud so that only one valid point per histogram cell is around
 void processPointcloud(pcl::PointCloud<pcl::PointXYZI>& final_cloud,
                        const std::vector<pcl::PointCloud<pcl::PointXYZ>>& complete_cloud, const std::vector<FOV>& fov,
@@ -403,3 +402,4 @@ void printHistogram(Histogram& histogram) {
   std::cout << "___________________________________________________________________________________________________\n";
 }
 }
+

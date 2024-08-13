@@ -364,6 +364,20 @@ inline Eigen::Vector3f toEigen(const geometry_msgs::msg::Point& p) {
   return ev3;
 }
 
+inline Eigen::Vector3f toEigen(float x, float y, float z) {
+  Eigen::Vector3f ev3(x, y, z);
+  return ev3;
+}
+
+inline Eigen::Quaternionf toEigen(float x, float y, float z, float w) {
+  Eigen::Quaternionf eqf;
+  eqf.x() = x;
+  eqf.y() = y;
+  eqf.z() = z;
+  eqf.w() = w;
+  return eqf;
+}
+
 inline Eigen::Vector3f toEigen(const geometry_msgs::msg::Vector3& v3) {
   Eigen::Vector3f ev3(v3.x, v3.y, v3.z);
   return ev3;

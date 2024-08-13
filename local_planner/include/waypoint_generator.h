@@ -3,7 +3,7 @@
 
 #include "usm.h"
 #include "common.h"
-#include "avoidance_output.h"
+#include "local_planner_type.h"
 
 #include <Eigen/Dense>
 
