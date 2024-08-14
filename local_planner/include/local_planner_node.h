@@ -37,7 +37,7 @@
 
 #include "local_planner_type.h"
 #include "common.h"
-#include "avoidance_node.h"
+#include "avoidance.h"
 #include "local_planner.h"
 #include "waypoint_generator.h"
 #include "transform_buffer.h"
@@ -68,7 +68,7 @@ namespace avoidance
         float altitude;
     } Vehicle_s;
 
-    struct cameraData
+    typedef struct 
     {
         std::string topic_;
         rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
@@ -85,20 +85,17 @@ namespace avoidance
         std::thread transform_thread_;
 
         FOV fov_fcu_frame_;
-    };
+    } cameraData;
 
     class LocalPlannerNode : public rclcpp::Node
     {
     public:
         LocalPlannerNode();
         virtual ~LocalPlannerNode();
-        void initNode();
-        void startNode();
-        virtual void onInit();
+        virtual void init();
         void updatePlannerInfo();
         void cmdLoopCallback();
         void calculateWaypoints(bool hover);
-        void checkFailsafe(rclcpp::Duration since_last_cloud, rclcpp::Duration since_start, bool &hover);
         void clickedPointCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg);
         void readParams();
         void initializeCameraSubscribers(std::vector<std::string> &camera_topics);

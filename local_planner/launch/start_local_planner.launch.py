@@ -15,8 +15,15 @@ local_planner = Node(
     parameters=[config],
 )
 
+point_cloud = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/realsense_d435i/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked']
+    )
+
 def generate_launch_description():
     return LaunchDescription([   
-        local_planner
+        # local_planner,
+        point_cloud
     ]) 
 

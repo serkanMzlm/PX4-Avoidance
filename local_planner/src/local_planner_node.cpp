@@ -6,7 +6,8 @@ namespace avoidance
 
     LocalPlannerNode::LocalPlannerNode() : spin_dt_(0.1), Node("local_planner_node"), tf_buffer_(5.f)
     {
-        onInit();
+        // readParams();
+        init();
     }
 
     LocalPlannerNode::~LocalPlannerNode()
@@ -37,28 +38,17 @@ namespace avoidance
 
         if (worker_tf_listener.joinable())
             worker_tf_listener.join();
-
-        // if (server_ != nullptr)
-        //     delete server_;
-        // if (tf_listener_ != nullptr)
-        //     delete tf_listener_;
     }
 
-    void LocalPlannerNode::onInit()
+    void LocalPlannerNode::init()
     {
         RCLCPP_INFO(this->get_logger(), "Initializing Node...");
-        initNode();
-        startNode();
+        rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
+	    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
 
-        worker = std::thread(&LocalPlannerNode::threadFunction, this);
-        worker_tf_listener = std::thread(&LocalPlannerNode::transformBufferThread, this);
-    }
-
-    void LocalPlannerNode::initNode()
-    {
-        sub.odom = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", 10,
+        sub.odom = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos,
                                                                              std::bind(&LocalPlannerNode::odomCallback, this, _1));
-        sub.vehicle_status = this->create_subscription<px4_msgs::msg::VehicleStatus>("/fmu/out/vehicle_status", 10,
+        sub.vehicle_status = this->create_subscription<px4_msgs::msg::VehicleStatus>("/fmu/out/vehicle_status", qos,
                                                                                      std::bind(&LocalPlannerNode::vehicleStatusCallback, this, _1));
         sub.clicked_point = this->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 10,
                                                                                         std::bind(&LocalPlannerNode::clickedPointCallback, this, _1));
@@ -71,17 +61,14 @@ namespace avoidance
         pub.trajector_waypoint = this->create_publisher<px4_msgs::msg::VehicleTrajectoryWaypoint>("/fmu/in/vehicle_trajectory_waypoint", 10);
         pub.offboard_control_mode = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
 
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&LocalPlannerNode::vehicleUpdate, this)); 
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(250), std::bind(&LocalPlannerNode::vehicleUpdate, this)); 
 
         local_planner_.reset(new LocalPlanner());
         wp_generator_.reset(new WaypointGenerator());
         avoidance_node_.reset(new AvoidanceNode());
 
-    }
-
-    void LocalPlannerNode::startNode()
-    {
-        avoidance_node_->init();
+        worker = std::thread(&LocalPlannerNode::threadFunction, this);
+        worker_tf_listener = std::thread(&LocalPlannerNode::transformBufferThread, this);
     }
 
     void LocalPlannerNode::updatePlannerInfo()
@@ -183,7 +170,6 @@ namespace avoidance
             rclcpp::Duration since_query = rclcpp::Clock().now() - start_query_position;
             if (since_query > rclcpp::Duration(local_planner_->timeout_termination_, 0))
             {
-                avoidance_node_->setSystemStatus(MAV_STATE::MAV_STATE_FLIGHT_TERMINATION);
                 if (!position_not_received_error_sent_)
                 {
                     // clang-format off
@@ -207,14 +193,7 @@ namespace avoidance
         rclcpp::Duration since_last_cloud = now - last_wp_time_;
         rclcpp::Duration since_start = now - start_time_;
 
-        checkFailsafe(since_last_cloud, since_start, hover_);
-
-        // send waypoint
-        if (avoidance_node_->getSystemStatus() == MAV_STATE::MAV_STATE_ACTIVE)
-        {
-            calculateWaypoints(hover_);
-        }
-
+        calculateWaypoints(hover_);
         position_received_ = false;
     }
 
@@ -231,17 +210,10 @@ namespace avoidance
         Eigen::Vector3f deg60_pt = Eigen::Vector3f(NAN, NAN, NAN);
         wp_generator_->getOfftrackPointsForVisualization(closest_pt, deg60_pt);
 
-        // mavros_msgs::Trajectory obst_free_path = {};
-        // transformToTrajectory(obst_free_path, toPoseStamped(result.position_wp, result.orientation_wp),
-        //                       toTwist(result.linear_velocity_wp, result.angular_velocity_wp));
-        // mavros_pos_setpoint_pub_.publish(toPoseStamped(result.position_wp, result.orientation_wp));
-
-        // mavros_obstacle_free_path_pub_.publish(obst_free_path);
-    }
-
-    void LocalPlannerNode::checkFailsafe(rclcpp::Duration since_last_cloud, rclcpp::Duration since_start, bool &hover)
-    {
-        avoidance_node_->checkFailsafe(since_last_cloud, since_start, hover);
+        px4_msgs::msg::VehicleTrajectoryWaypoint obst_free_path;
+        transformToTrajectory(obst_free_path, toPoseStamped(result.position_wp, result.orientation_wp),
+                              toTwist(result.linear_velocity_wp, result.angular_velocity_wp));
+        vehicleTrajectoryWaypointCallback(obst_free_path);
     }
 
     void LocalPlannerNode::clickedPointCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg)
@@ -261,17 +233,18 @@ namespace avoidance
         goal_d.x() = this->get_parameter("goal_x_param").as_double();
         goal_d.y() = this->get_parameter("goal_y_param").as_double();
         goal_d.z() = this->get_parameter("goal_z_param").as_double();
-        accept_goal_input_topic_ = this->get_parameter("accept_goal_input_topic").as_double();
+        accept_goal_input_topic_ = this->get_parameter("accept_goal_input_topic").as_bool();
 
         goal_position_ = goal_d.cast<float>();
-        std::vector<std::string> camera_topics;
+        std::vector<std::string> camera_topics = {"/realsense_d435i/points"};
         initializeCameraSubscribers(camera_topics);
         new_goal_ = true;
     }
 
     void LocalPlannerNode::initializeCameraSubscribers(std::vector<std::string> &camera_topics)
     {
-        cameras_.resize(camera_topics.size());
+        RCLCPP_INFO_STREAM(this->get_logger(), "Size: " << camera_topics.size());
+        cameras_.resize(1);
         for (size_t i = 0; i < camera_topics.size(); i++)
         {
             cameras_[i].camera_mutex_.reset(new std::mutex);
@@ -573,28 +546,28 @@ namespace avoidance
 
     void LocalPlannerNode::vehicleUpdate()
     {
-        px4_msgs::msg::VehicleTrajectoryWaypoint msg;
-        msg.waypoints[0].position[0] = 2.0;
-        msg.waypoints[0].position[1] = 2.0;
-        msg.waypoints[0].position[2] = 2.0;
+        // px4_msgs::msg::VehicleTrajectoryWaypoint msg;
+        // msg.waypoints[0].position[0] = 2.0;
+        // msg.waypoints[0].position[1] = 2.0;
+        // msg.waypoints[0].position[2] = 2.0;
 
-        msg.waypoints[1].position[0] = 4.0;
-        msg.waypoints[1].position[1] = 2.0;
-        msg.waypoints[1].position[2] = 2.0;
+        // msg.waypoints[1].position[0] = 4.0;
+        // msg.waypoints[1].position[1] = 2.0;
+        // msg.waypoints[1].position[2] = 2.0;
 
-        msg.waypoints[2].position[0] = 6.0;
-        msg.waypoints[2].position[1] = 2.0;
-        msg.waypoints[2].position[2] = 2.0;
+        // msg.waypoints[2].position[0] = 6.0;
+        // msg.waypoints[2].position[1] = 2.0;
+        // msg.waypoints[2].position[2] = 2.0;
 
-        msg.waypoints[3].position[0] = 8.0;
-        msg.waypoints[3].position[1] = 2.0;
-        msg.waypoints[3].position[2] = 2.0;
+        // msg.waypoints[3].position[0] = 8.0;
+        // msg.waypoints[3].position[1] = 2.0;
+        // msg.waypoints[3].position[2] = 2.0;
 
-        msg.waypoints[4].position[0] = 10.0;
-        msg.waypoints[4].position[1] = 2.0;
-        msg.waypoints[4].position[2] = 2.0;
+        // msg.waypoints[4].position[0] = 10.0;
+        // msg.waypoints[4].position[1] = 2.0;
+        // msg.waypoints[4].position[2] = 2.0;
         publishOffboardControlMode();
-        vehicleTrajectoryWaypointCallback(msg);
+        // vehicleTrajectoryWaypointCallback(msg);
     }
 
 } // namespace avoidance
