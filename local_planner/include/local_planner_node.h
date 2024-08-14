@@ -20,11 +20,16 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include <px4_msgs/msg/vehicle_command.hpp>
 #include <px4_msgs/msg/vehicle_status.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
 #include <px4_msgs/msg/obstacle_distance.hpp>
 #include <px4_msgs/msg/vehicle_trajectory_bezier.hpp>
 #include <px4_msgs/msg/vehicle_trajectory_waypoint.hpp>
+#include <px4_msgs/msg/offboard_control_mode.hpp>
+#include <px4_msgs/msg/trajectory_setpoint.hpp>
+#include <px4_msgs/msg/vehicle_local_position.hpp>
+#include <px4_msgs/msg/trajectory_setpoint.hpp>
 
 #include <pcl/point_cloud.h>
 #include <pcl/filters/filter.h>
@@ -43,11 +48,19 @@ namespace avoidance
     {
         rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr odom;
         rclcpp::Subscription<px4_msgs::msg::VehicleStatus>::SharedPtr vehicle_status;
+        rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point;
+        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_goal;
+        rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr goal_topic;
     } Sub_t;
 
     typedef struct
     {
         rclcpp::Publisher<px4_msgs::msg::ObstacleDistance>::SharedPtr obs_distance;
+        rclcpp::Publisher<px4_msgs::msg::VehicleLocalPosition>::SharedPtr pose_setpoint;
+        rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_setpoint;
+        rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_control_mode;
+        rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr vehicle_command;
+        rclcpp::Publisher<px4_msgs::msg::VehicleTrajectoryWaypoint>::SharedPtr trajector_waypoint;
     } Pub_t;
 
     typedef struct
@@ -98,9 +111,6 @@ namespace avoidance
         void transformBufferThread();
         void clickedGoalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
         void updateGoalCallback(const visualization_msgs::msg::MarkerArray::SharedPtr msg);
-
-        void odomCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr msg);
-        void vehicleStatusCallback(const px4_msgs::msg::VehicleStatus::SharedPtr msg);
 
         std::unique_ptr<LocalPlanner> local_planner_;
         std::unique_ptr<WaypointGenerator> wp_generator_;
@@ -156,7 +166,16 @@ namespace avoidance
 
         Sub_t sub;
         Pub_t pub;
+        rclcpp::TimerBase::SharedPtr timer_;
         Vehicle_s veh;
+
+        void publishOffboardControlMode();
+        void publishVehicleCommand(uint16_t command, float param1, float param2);
+        void publishTrajectorySetpoint(float x, float y, float z, float yaw);
+        void odomCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr msg);
+        void vehicleStatusCallback(const px4_msgs::msg::VehicleStatus::SharedPtr msg);
+        void vehicleTrajectoryWaypointCallback(px4_msgs::msg::VehicleTrajectoryWaypoint msg);
+        void vehicleUpdate();
     };
 }
 

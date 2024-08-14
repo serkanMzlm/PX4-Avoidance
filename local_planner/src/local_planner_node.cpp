@@ -4,8 +4,7 @@ using namespace std::placeholders;
 namespace avoidance
 {
 
-    LocalPlannerNode::LocalPlannerNode() : 
-    spin_dt_(0.1), Node("local_planner_node"), tf_buffer_(5.f)
+    LocalPlannerNode::LocalPlannerNode() : spin_dt_(0.1), Node("local_planner_node"), tf_buffer_(5.f)
     {
         onInit();
     }
@@ -57,15 +56,27 @@ namespace avoidance
 
     void LocalPlannerNode::initNode()
     {
+        sub.odom = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", 10,
+                                                                             std::bind(&LocalPlannerNode::odomCallback, this, _1));
+        sub.vehicle_status = this->create_subscription<px4_msgs::msg::VehicleStatus>("/fmu/out/vehicle_status", 10,
+                                                                                     std::bind(&LocalPlannerNode::vehicleStatusCallback, this, _1));
+        sub.clicked_point = this->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 10,
+                                                                                        std::bind(&LocalPlannerNode::clickedPointCallback, this, _1));
+        sub.pose_goal = this->create_subscription<geometry_msgs::msg::PoseStamped>("/goal_pose", 10,
+                                                                                   std::bind(&LocalPlannerNode::clickedGoalCallback, this, _1));
+        sub.goal_topic = this->create_subscription<visualization_msgs::msg::MarkerArray>("input/goal_position", 10,
+                                                                                         std::bind(&LocalPlannerNode::updateGoalCallback, this, _1));
+
+        pub.obs_distance = this->create_publisher<px4_msgs::msg::ObstacleDistance>("/fmu/in/obstacle_distance", 10);
+        pub.trajector_waypoint = this->create_publisher<px4_msgs::msg::VehicleTrajectoryWaypoint>("/fmu/in/vehicle_trajectory_waypoint", 10);
+        pub.offboard_control_mode = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
+
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&LocalPlannerNode::vehicleUpdate, this)); 
+
         local_planner_.reset(new LocalPlanner());
         wp_generator_.reset(new WaypointGenerator());
         avoidance_node_.reset(new AvoidanceNode());
 
-        sub.odom = this->create_subscription<px4_msgs::msg::VehicleOdometry>(
-            "/fmu/out/vehicle_odometry", 10, std::bind(&LocalPlannerNode::odomCallback, this, _1));
-        sub.vehicle_status = this->create_subscription<px4_msgs::msg::VehicleStatus>(
-            "/fmu/out/vehicle_status", 10, std::bind(&LocalPlannerNode::vehicleStatusCallback, this, _1));
-        pub.obs_distance = this->create_publisher<px4_msgs::msg::ObstacleDistance>("/fmu/in/obstacle_distance", 10);
     }
 
     void LocalPlannerNode::startNode()
@@ -176,15 +187,15 @@ namespace avoidance
                 if (!position_not_received_error_sent_)
                 {
                     // clang-format off
-        RCLCPP_WARN(this->get_logger(), "\033[1;33m Planner abort: missing required data from FCU \n \033[0m");
-        RCLCPP_WARN(this->get_logger(), "----------------------------- Debugging Info -----------------------------");
-        RCLCPP_WARN(this->get_logger(), "Local planner has not received a position from FCU, check the following: ");
-        RCLCPP_WARN(this->get_logger(), "1. Check cables connecting PX4 autopilot with onboard computer");
-        RCLCPP_WARN(this->get_logger(), "2. Set PX4 parameter MAV_1_MODE to onbard or external vision");
-        RCLCPP_WARN(this->get_logger(), "3. Set correct fcu_url in local_planner launch file:");
-        RCLCPP_WARN(this->get_logger(), "   Example direct connection to serial port: /dev/ttyUSB0:921600");
-        RCLCPP_WARN(this->get_logger(), "   Example connection over mavlink router: udp://:14540@localhost:14557");
-        RCLCPP_WARN(this->get_logger(), "--------------------------------------------------------------------------");
+                    RCLCPP_WARN(this->get_logger(), "\033[1;33m Planner abort: missing required data from FCU \n \033[0m");
+                    RCLCPP_WARN(this->get_logger(), "----------------------------- Debugging Info -----------------------------");
+                    RCLCPP_WARN(this->get_logger(), "Local planner has not received a position from FCU, check the following: ");
+                    RCLCPP_WARN(this->get_logger(), "1. Check cables connecting PX4 autopilot with onboard computer");
+                    RCLCPP_WARN(this->get_logger(), "2. Set PX4 parameter MAV_1_MODE to onbard or external vision");
+                    RCLCPP_WARN(this->get_logger(), "3. Set correct fcu_url in local_planner launch file:");
+                    RCLCPP_WARN(this->get_logger(), "   Example direct connection to serial port: /dev/ttyUSB0:921600");
+                    RCLCPP_WARN(this->get_logger(), "   Example connection over mavlink router: udp://:14540@localhost:14557");
+                    RCLCPP_WARN(this->get_logger(), "--------------------------------------------------------------------------");
                     // clang-format on
                     position_not_received_error_sent_ = true;
                 }
@@ -220,22 +231,6 @@ namespace avoidance
         Eigen::Vector3f deg60_pt = Eigen::Vector3f(NAN, NAN, NAN);
         wp_generator_->getOfftrackPointsForVisualization(closest_pt, deg60_pt);
 
-        //   last_waypoint_position_ = newest_waypoint_position_;
-        //   newest_waypoint_position_ = result.smoothed_goto_position;
-        //   last_adapted_waypoint_position_ = newest_adapted_waypoint_position_;
-        //   newest_adapted_waypoint_position_ = result.adapted_goto_position;
-
-        // visualize waypoint topics
-        //   visualizer_.visualizeWaypoints(result.goto_position, result.adapted_goto_position,
-        //   result.smoothed_goto_position); visualizer_.publishPaths(last_position_, newest_position_,
-        //   last_waypoint_position_, newest_waypoint_position_,
-        //                            last_adapted_waypoint_position_, newest_adapted_waypoint_position_);
-        //   visualizer_.publishCurrentSetpoint(toTwist(result.linear_velocity_wp, result.angular_velocity_wp),
-        //                                      result.waypoint_type, newest_position_);
-
-        //   visualizer_.publishOfftrackPoints(closest_pt, deg60_pt);
-
-        // send waypoints to mavros
         // mavros_msgs::Trajectory obst_free_path = {};
         // transformToTrajectory(obst_free_path, toPoseStamped(result.position_wp, result.orientation_wp),
         //                       toTwist(result.linear_velocity_wp, result.angular_velocity_wp));
@@ -490,7 +485,7 @@ namespace avoidance
                 local_planner_->runPlanner();
 
                 publishLaserScan();
-
+                RCLCPP_INFO(this->get_logger(), "Publish");
                 std::lock_guard<std::mutex> lock(waypoints_mutex_);
                 wp_generator_->setPlannerInfo(local_planner_->getAvoidanceOutput());
                 last_wp_time_ = rclcpp::Clock().now();
@@ -526,6 +521,80 @@ namespace avoidance
             goal_position_ = toEigen(msg->markers[0].pose.position);
             new_goal_ = true;
         }
+    }
+
+    void LocalPlannerNode::publishOffboardControlMode()
+    {
+        px4_msgs::msg::OffboardControlMode msg{};
+        msg.position = true;
+        msg.velocity = false;
+        msg.acceleration = false;
+        msg.attitude = false;
+        msg.body_rate = false;
+        msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+        pub.offboard_control_mode->publish(msg);
+    }
+
+    void LocalPlannerNode::publishTrajectorySetpoint(float x, float y, float z, float yaw)
+    {
+        px4_msgs::msg::TrajectorySetpoint msg{};
+        msg.position[0] = y;
+        msg.position[1] = x;
+        msg.position[2] = z;
+        // msg.velocity[0] = setpoint.velocity.x;
+        // msg.velocity[1] = setpoint.velocity.y;
+        // msg.velocity[2] = setpoint.velocity.z;
+        msg.yaw = yaw; // [-PI:PI]
+        msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+        pub.trajectory_setpoint->publish(msg);
+    }
+
+    void LocalPlannerNode::publishVehicleCommand(uint16_t command, float param1, float param2)
+    {
+        px4_msgs::msg::VehicleCommand msg{};
+        msg.param1 = param1;
+        msg.param2 = param2;
+        msg.command = command;
+        msg.target_system = 1;
+        msg.target_component = 1;
+        msg.source_system = 1;
+        msg.source_component = 1;
+        msg.from_external = true;
+        msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+        pub.vehicle_command->publish(msg);
+    }
+
+    void LocalPlannerNode::vehicleTrajectoryWaypointCallback(px4_msgs::msg::VehicleTrajectoryWaypoint msg)
+    {
+        msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
+        RCLCPP_INFO_STREAM(this->get_logger(), "data: " << msg.waypoints[0].position[0]);
+        pub.trajector_waypoint->publish(msg);
+    }
+
+    void LocalPlannerNode::vehicleUpdate()
+    {
+        px4_msgs::msg::VehicleTrajectoryWaypoint msg;
+        msg.waypoints[0].position[0] = 2.0;
+        msg.waypoints[0].position[1] = 2.0;
+        msg.waypoints[0].position[2] = 2.0;
+
+        msg.waypoints[1].position[0] = 4.0;
+        msg.waypoints[1].position[1] = 2.0;
+        msg.waypoints[1].position[2] = 2.0;
+
+        msg.waypoints[2].position[0] = 6.0;
+        msg.waypoints[2].position[1] = 2.0;
+        msg.waypoints[2].position[2] = 2.0;
+
+        msg.waypoints[3].position[0] = 8.0;
+        msg.waypoints[3].position[1] = 2.0;
+        msg.waypoints[3].position[2] = 2.0;
+
+        msg.waypoints[4].position[0] = 10.0;
+        msg.waypoints[4].position[1] = 2.0;
+        msg.waypoints[4].position[2] = 2.0;
+        publishOffboardControlMode();
+        vehicleTrajectoryWaypointCallback(msg);
     }
 
 } // namespace avoidance
