@@ -6,7 +6,7 @@ namespace avoidance
 
     LocalPlannerNode::LocalPlannerNode() : spin_dt_(0.1), Node("local_planner_node"), tf_buffer_(5.f)
     {
-        // readParams();
+        readParams();
         init();
     }
 
@@ -23,14 +23,14 @@ namespace avoidance
             transformed_cloud_cv_.notify_all();
         }
 
-        for (size_t i = 0; i < cameras_.size(); ++i)
+        for (size_t i = 0; i < 1; ++i)
         {
             {
-                std::lock_guard<std::mutex> guard(*cameras_[i].camera_mutex_);
-                cameras_[i].camera_cv_->notify_all();
+                std::lock_guard<std::mutex> guard(*cameras_.camera_mutex_);
+                cameras_.camera_cv_->notify_all();
             }
-            if (cameras_[i].transform_thread_.joinable())
-                cameras_[i].transform_thread_.join();
+            if (cameras_.transform_thread_.joinable())
+                cameras_.transform_thread_.join();
         }
 
         if (worker.joinable())
@@ -44,7 +44,7 @@ namespace avoidance
     {
         RCLCPP_INFO(this->get_logger(), "Initializing Node...");
         rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
-	    auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
+        auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
 
         sub.odom = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos,
                                                                              std::bind(&LocalPlannerNode::odomCallback, this, _1));
@@ -61,7 +61,7 @@ namespace avoidance
         pub.trajector_waypoint = this->create_publisher<px4_msgs::msg::VehicleTrajectoryWaypoint>("/fmu/in/vehicle_trajectory_waypoint", 10);
         pub.offboard_control_mode = this->create_publisher<px4_msgs::msg::OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
 
-        timer_ = this->create_wall_timer(std::chrono::milliseconds(250), std::bind(&LocalPlannerNode::vehicleUpdate, this)); 
+        timer_ = this->create_wall_timer(std::chrono::milliseconds(250), std::bind(&LocalPlannerNode::vehicleUpdate, this));
 
         local_planner_.reset(new LocalPlanner());
         wp_generator_.reset(new WaypointGenerator());
@@ -74,21 +74,21 @@ namespace avoidance
     void LocalPlannerNode::updatePlannerInfo()
     {
         // update the point cloud
-        local_planner_->original_cloud_vector_.resize(cameras_.size());
-        for (size_t i = 0; i < cameras_.size(); ++i)
+        local_planner_->original_cloud_vector_.resize(1);
+        for (size_t i = 0; i < 1; ++i)
         {
-            std::lock_guard<std::mutex> transformed_cloud_guard(*(cameras_[i].camera_mutex_));
+            std::lock_guard<std::mutex> transformed_cloud_guard(*(cameras_.camera_mutex_));
             try
             {
-                std::swap(local_planner_->original_cloud_vector_[i], cameras_[i].transformed_cloud_);
-                cameras_[i].transformed_cloud_.clear();
-                cameras_[i].transformed_ = false;
-                local_planner_->setFOV(i, cameras_[i].fov_fcu_frame_);
-                wp_generator_->setFOV(i, cameras_[i].fov_fcu_frame_);
+                std::swap(local_planner_->original_cloud_vector_[i], cameras_.transformed_cloud_);
+                cameras_.transformed_cloud_.clear();
+                cameras_.transformed_ = false;
+                local_planner_->setFOV(i, cameras_.fov_fcu_frame_);
+                wp_generator_->setFOV(i, cameras_.fov_fcu_frame_);
             }
             catch (tf2::TransformException &ex)
             {
-                // ROS_ERROR("Received an exception trying to transform a pointcloud: %s", ex.what());
+                RCLCPP_ERROR(this->get_logger(), "Received an exception trying to transform a pointcloud: %s", ex.what());
             }
         }
 
@@ -236,28 +236,23 @@ namespace avoidance
         accept_goal_input_topic_ = this->get_parameter("accept_goal_input_topic").as_bool();
 
         goal_position_ = goal_d.cast<float>();
-        std::vector<std::string> camera_topics = {"/realsense_d435i/points"};
+        std::string camera_topics = "/realsense_d435i/points";
         initializeCameraSubscribers(camera_topics);
         new_goal_ = true;
     }
 
-    void LocalPlannerNode::initializeCameraSubscribers(std::vector<std::string> &camera_topics)
+    void LocalPlannerNode::initializeCameraSubscribers(std::string &camera_topics)
     {
-        RCLCPP_INFO_STREAM(this->get_logger(), "Size: " << camera_topics.size());
-        cameras_.resize(1);
-        for (size_t i = 0; i < camera_topics.size(); i++)
-        {
-            cameras_[i].camera_mutex_.reset(new std::mutex);
-            cameras_[i].camera_cv_.reset(new std::condition_variable);
+        cameras_.camera_mutex_.reset(new std::mutex);
+        cameras_.camera_cv_.reset(new std::condition_variable);
 
-            cameras_[i].received_ = false;
-            cameras_[i].transformed_ = false;
-            index_ = i;
-            cameras_[i].pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-                camera_topics[i], 100, std::bind(&LocalPlannerNode::pointCloudCallback, this, std::placeholders::_1));
-            cameras_[i].topic_ = camera_topics[i];
-            cameras_[i].transform_thread_ = std::thread(&LocalPlannerNode::pointCloudTransformThread, this, i);
-        }
+        cameras_.received_ = false;
+        cameras_.transformed_ = false;
+        index_ = 0;
+        cameras_.pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+            camera_topics, 100, std::bind(&LocalPlannerNode::pointCloudCallback, this, std::placeholders::_1));
+        cameras_.topic_ = camera_topics;
+        cameras_.transform_thread_ = std::thread(&LocalPlannerNode::pointCloudTransformThread, this, 0);
     }
 
     void LocalPlannerNode::printPointInfo(double x, double y, double z)
@@ -278,10 +273,10 @@ namespace avoidance
     size_t LocalPlannerNode::numTransformedClouds()
     {
         size_t num_transformed_clouds = 0;
-        for (size_t i = 0; i < cameras_.size(); i++)
+        for (size_t i = 0; i < 1; i++)
         {
-            std::lock_guard<std::mutex> transformed_cloud_guard(*(cameras_[i].camera_mutex_));
-            if (cameras_[i].transformed_)
+            std::lock_guard<std::mutex> transformed_cloud_guard(*(cameras_.camera_mutex_));
+            if (cameras_.transformed_)
                 num_transformed_clouds++;
         }
         return num_transformed_clouds;
@@ -289,26 +284,26 @@ namespace avoidance
 
     void LocalPlannerNode::pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     {
-        std::lock_guard<std::mutex> lck(*(cameras_[index_].camera_mutex_));
+        std::lock_guard<std::mutex> lck(*(cameras_.camera_mutex_));
 
         auto timeSinceLast = [&]() -> rclcpp::Duration
         {
-            rclcpp::Time lastCloudReceived = pcl_conversions::fromPCL(cameras_[index_].untransformed_cloud_.header.stamp);
+            rclcpp::Time lastCloudReceived = pcl_conversions::fromPCL(cameras_.untransformed_cloud_.header.stamp);
             rclcpp::Time currentCloudReceived(msg->header.stamp.sec, msg->header.stamp.nanosec);
             return currentCloudReceived - lastCloudReceived;
         };
 
-        if (cameras_[index_].received_ && timeSinceLast() < rclcpp::Duration::from_seconds(0.3))
+        if (cameras_.received_ && timeSinceLast() < rclcpp::Duration::from_seconds(0.3))
         {
             return;
         }
 
-        pcl::fromROSMsg(*msg, cameras_[index_].untransformed_cloud_);
-        cameras_[index_].received_ = true;
-        cameras_[index_].camera_cv_->notify_all();
+        pcl::fromROSMsg(*msg, cameras_.untransformed_cloud_);
+        cameras_.received_ = true;
+        cameras_.camera_cv_->notify_all();
 
         // this runs once at the beginning to get the transforms
-        if (!cameras_[index_].transform_registered_)
+        if (!cameras_.transform_registered_)
         {
             std::lock_guard<std::mutex> tf_list_guard(buffered_transforms_mutex_);
             std::pair<std::string, std::string> transform_frames;
@@ -317,7 +312,7 @@ namespace avoidance
             buffered_transforms_.push_back(transform_frames);
             transform_frames.second = "fcu";
             buffered_transforms_.push_back(transform_frames);
-            cameras_[index_].transform_registered_ = true;
+            cameras_.transform_registered_ = true;
         }
     }
 
@@ -328,35 +323,32 @@ namespace avoidance
             bool waiting_on_transform = false;
             bool waiting_on_cloud = false;
             {
-                std::lock_guard<std::mutex> camera_lock(*(cameras_[index].camera_mutex_));
+                std::lock_guard<std::mutex> camera_lock(*(cameras_.camera_mutex_));
 
-                if (cameras_[index].received_)
+                if (cameras_.received_)
                 {
                     geometry_msgs::msg::TransformStamped cloud_transform;
                     geometry_msgs::msg::TransformStamped fcu_transform;
-
-                    if (tf_buffer_.getTransform(cameras_[index].untransformed_cloud_.header.frame_id, "local_origin",
-                                                pcl_conversions::fromPCL(cameras_[index].untransformed_cloud_.header.stamp),
-                                                cloud_transform) &&
-                        tf_buffer_.getTransform(cameras_[index].untransformed_cloud_.header.frame_id, "fcu",
-                                                pcl_conversions::fromPCL(cameras_[index].untransformed_cloud_.header.stamp),
-                                                fcu_transform))
+                    rclcpp::Time time_stamp_1(cameras_.untransformed_cloud_.header.stamp, RCL_ROS_TIME);
+                    rclcpp::Time time_stamp_2(cameras_.untransformed_cloud_.header.stamp, RCL_ROS_TIME);
+                    if (tf_buffer_.getTransform(cameras_.untransformed_cloud_.header.frame_id, "local_origin", time_stamp_1,  cloud_transform) &&
+                        tf_buffer_.getTransform(cameras_.untransformed_cloud_.header.frame_id, "fcu", time_stamp_2, fcu_transform))
                     {
                         // remove nan padding and compute fov
-                        pcl::PointCloud<pcl::PointXYZ> maxima = removeNaNAndGetMaxima(cameras_[index].untransformed_cloud_);
+                        pcl::PointCloud<pcl::PointXYZ> maxima = removeNaNAndGetMaxima(cameras_.untransformed_cloud_);
 
                         // update point cloud FOV
                         // pcl_ros::transformPointCloud(maxima, maxima, fcu_transform);
-                        updateFOVFromMaxima(cameras_[index].fov_fcu_frame_, maxima);
+                        updateFOVFromMaxima(cameras_.fov_fcu_frame_, maxima);
 
                         // transform cloud to local_origin frame
-                        // pcl_ros::transformPointCloud(cameras_[index].untransformed_cloud_, cameras_[index].transformed_cloud_,
+                        // pcl_ros::transformPointCloud(cameras_.untransformed_cloud_, cameras_.transformed_cloud_,
                         //                              cloud_transform);
-                        cameras_[index].transformed_cloud_.header.frame_id = "local_origin";
-                        cameras_[index].transformed_cloud_.header.stamp = cameras_[index].untransformed_cloud_.header.stamp;
+                        cameras_.transformed_cloud_.header.frame_id = "local_origin";
+                        cameras_.transformed_cloud_.header.stamp = cameras_.untransformed_cloud_.header.stamp;
 
-                        cameras_[index].transformed_ = true;
-                        cameras_[index].received_ = false;
+                        cameras_.transformed_ = true;
+                        cameras_.received_ = false;
                         waiting_on_cloud = true;
                         std::lock_guard<std::mutex> lock(transformed_cloud_mutex_);
                         transformed_cloud_cv_.notify_all();
@@ -384,8 +376,8 @@ namespace avoidance
             }
             else if (waiting_on_cloud)
             {
-                std::unique_lock<std::mutex> lck(*(cameras_[index].camera_mutex_));
-                cameras_[index].camera_cv_->wait_for(lck, std::chrono::milliseconds(5000));
+                std::unique_lock<std::mutex> lck(*(cameras_.camera_mutex_));
+                cameras_.camera_cv_->wait_for(lck, std::chrono::milliseconds(5000));
             }
         }
     }
@@ -443,7 +435,7 @@ namespace avoidance
         {
             rclcpp::Time start_time = rclcpp::Clock().now();
 
-            while ((cameras_.size() == 0 || cameras_.size() != numTransformedClouds()) && !should_exit_)
+            while (!should_exit_)
             {
                 std::unique_lock<std::mutex> lock(transformed_cloud_mutex_);
                 transformed_cloud_cv_.wait_for(lock, std::chrono::milliseconds(5000));

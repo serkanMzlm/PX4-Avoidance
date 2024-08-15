@@ -98,7 +98,7 @@ namespace avoidance
         void calculateWaypoints(bool hover);
         void clickedPointCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg);
         void readParams();
-        void initializeCameraSubscribers(std::vector<std::string> &camera_topics);
+        void initializeCameraSubscribers(std::string &camera_topics);
         void printPointInfo(double x, double y, double z);
         size_t numTransformedClouds();
         void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
@@ -113,7 +113,8 @@ namespace avoidance
         std::unique_ptr<WaypointGenerator> wp_generator_;
         std::unique_ptr<AvoidanceNode> avoidance_node_;
 
-        std::vector<cameraData> cameras_;
+        // std::vector<cameraData> cameras_;
+        cameraData cameras_;
         std::atomic<bool> should_exit_{false};
 
         bool new_goal_ = false;

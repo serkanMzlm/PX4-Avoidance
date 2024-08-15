@@ -78,44 +78,36 @@ bool TransformBuffer::insertTransform(const std::string& source_frame, const std
 }
 
 bool TransformBuffer::getTransform(const std::string& source_frame, const std::string& target_frame,
-                                   const rclcpp::Time& time, geometry_msgs::msg::TransformStamped& transform) const {
-  std::lock_guard<std::mutex> lck(mutex_);
-  std::unordered_map<std::string, std::deque<geometry_msgs::msg::TransformStamped>>::const_iterator iterator =
-      buffer_.find(getKey(source_frame, target_frame));
-  if (iterator == buffer_.end()) {
-    print(log_level::error, "TF Buffer: could not retrieve requested transform from buffer, unregistered");
-    return false;
-  } else if (iterator->second.size() == 0) {
-    print(log_level::warn, "TF Buffer: could not retrieve requested transform from buffer, buffer is empty");
-    return false;
-  } else {
-    if (rclcpp::Time(iterator->second.back().header.stamp) < time) {
-      print(log_level::debug, "TF Buffer: could not retrieve requested transform from buffer, tf has not yet arrived");
-      return false;
-    } else if (rclcpp::Time(iterator->second.front().header.stamp) > time) {
-      print(log_level::warn,
-            "TF Buffer: could not retrieve requested transform from buffer, tf has already been dropped from buffer");
-      return false;
-    } else {
-      const geometry_msgs::msg::TransformStamped* previous = &iterator->second.back();
-      for (std::deque<geometry_msgs::msg::TransformStamped>::const_reverse_iterator it = ++iterator->second.rbegin();
-           it != iterator->second.rend(); ++it) {
-        if (rclcpp::Time(it->header.stamp) <= time) {
-          const geometry_msgs::msg::TransformStamped& tf_earlier = *it;
-          const geometry_msgs::msg::TransformStamped& tf_later = *previous;
-          transform.header.stamp = time;
-          if (interpolateTransform(tf_earlier, tf_later, transform)) {
-            return true;
-          } else {
-            print(log_level::warn, "TF Buffer: could not interpolate transform");
-            return false;
-          }
-        }
-        previous = &(*it);
-      }
+                                         const rclcpp::Time& time, geometry_msgs::msg::TransformStamped& transform) const {
+    std::lock_guard<std::mutex> lck(mutex_);
+
+    auto it = buffer_.find(getKey(source_frame, target_frame));
+    if (it == buffer_.end() || it->second.empty()) {
+        print(log_level::error, "TF Buffer: Could not retrieve requested transform from buffer.");
+        return false;
     }
-  }
-  return false;
+
+    const auto& transforms = it->second;
+    rclcpp::Time earliest_time = transforms.front().header.stamp;
+    rclcpp::Time latest_time = transforms.back().header.stamp;
+
+    if (time < earliest_time || time > latest_time) {
+        print(log_level::warn, "TF Buffer: Requested time is out of bounds.");
+        return false;
+    }
+
+    for (size_t i = 0; i < transforms.size() - 1; ++i) {
+        const auto& tf_earlier = transforms[i];
+        const auto& tf_later = transforms[i + 1];
+
+        if (time >= rclcpp::Time(tf_earlier.header.stamp) && time <= rclcpp::Time(tf_later.header.stamp)) {
+            interpolateTransform(tf_earlier, tf_later, transform);
+            transform.header.stamp = time;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void TransformBuffer::print(const log_level& level, const std::string& msg) const {
