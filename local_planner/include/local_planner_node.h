@@ -51,6 +51,7 @@ namespace avoidance
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clicked_point;
         rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr pose_goal;
         rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr goal_topic;
+        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr camera_point_cloud;
     } Sub_t;
 
     typedef struct
@@ -65,13 +66,22 @@ namespace avoidance
 
     typedef struct
     {
+        rclcpp::TimerBase::SharedPtr vehicle_update;
+        rclcpp::TimerBase::SharedPtr main_function;
+        rclcpp::TimerBase::SharedPtr cloud_transform;
+        rclcpp::TimerBase::SharedPtr cmd_loop;
+        // rclcpp::TimerBase::SharedPtr ;
+    } RosTime_t;
+
+    typedef struct
+    {
         float altitude;
     } Vehicle_s;
 
     typedef struct 
     {
         std::string topic_;
-        rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
+        
         pcl::PointCloud<pcl::PointXYZ> untransformed_cloud_;
         bool received_;
 
@@ -92,22 +102,22 @@ namespace avoidance
     public:
         LocalPlannerNode();
         virtual ~LocalPlannerNode();
-        virtual void init();
         void updatePlannerInfo();
         void cmdLoopCallback();
         void calculateWaypoints(bool hover);
         void clickedPointCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg);
         void readParams();
-        void initializeCameraSubscribers(std::string &camera_topics);
         void printPointInfo(double x, double y, double z);
         size_t numTransformedClouds();
         void pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
         void pointCloudTransformThread(int index);
         void publishLaserScan() const;
-        void threadFunction();
-        void transformBufferThread();
+
         void clickedGoalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
         void updateGoalCallback(const visualization_msgs::msg::MarkerArray::SharedPtr msg);
+        void odomCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr msg);
+        void vehicleStatusCallback(const px4_msgs::msg::VehicleStatus::SharedPtr msg);
+        void vehicleTrajectoryWaypointCallback(px4_msgs::msg::VehicleTrajectoryWaypoint msg);
 
         std::unique_ptr<LocalPlanner> local_planner_;
         std::unique_ptr<WaypointGenerator> wp_generator_;
@@ -127,7 +137,6 @@ namespace avoidance
         bool is_takeoff_waypoint_{false};
 
         double spin_dt_;
-        int index_ = 0;
         uint64_t px4_time = 0;
 
         std::condition_variable tf_buffer_cv_;
@@ -155,25 +164,21 @@ namespace avoidance
         std::mutex buffered_transforms_mutex_;
         std::vector<std::pair<std::string, std::string>> buffered_transforms_;
 
-        std::thread worker;
-        std::thread worker_tf_listener;
-
         rclcpp::Time start_time_;
         rclcpp::Time last_wp_time_;
         rclcpp::Time t_status_sent_;
 
         Sub_t sub;
         Pub_t pub;
-        rclcpp::TimerBase::SharedPtr timer_;
+        RosTime_t timer_;
         Vehicle_s veh;
 
         void publishOffboardControlMode();
         void publishVehicleCommand(uint16_t command, float param1, float param2);
         void publishTrajectorySetpoint(float x, float y, float z, float yaw);
-        void odomCallback(const px4_msgs::msg::VehicleOdometry::SharedPtr msg);
-        void vehicleStatusCallback(const px4_msgs::msg::VehicleStatus::SharedPtr msg);
-        void vehicleTrajectoryWaypointCallback(px4_msgs::msg::VehicleTrajectoryWaypoint msg);
-        void vehicleUpdate();
+        void mainCallback();
+        void transformBuffer();
+        void initTopic();
     };
 }
 
