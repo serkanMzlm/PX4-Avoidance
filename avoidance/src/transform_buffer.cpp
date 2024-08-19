@@ -102,13 +102,13 @@ namespace avoidance
       rclcpp::Time earliest_time = transforms.front().header.stamp;
       rclcpp::Time latest_time = transforms.back().header.stamp;
 
-      // if (time < earliest_time || time > latest_time)
-      // {
-      //   RCLCPP_WARN_STREAM(tf_logger_, " earliest time: " << earliest_time.nanoseconds()
-      //                                                     << " latest_time: " << latest_time.nanoseconds()
-      //                                                     << " time: " << time.nanoseconds());
-      //   return false;
-      // }
+      if (time < earliest_time || time > latest_time)
+      {
+        RCLCPP_WARN_STREAM(tf_logger_, " earliest time: " << earliest_time.nanoseconds()
+                                                          << " latest_time: " << latest_time.nanoseconds()
+                                                          << " time: " << time.nanoseconds());
+        return false;
+      }
 
       for (size_t i = 0; i < transforms.size() - 1; ++i)
       {

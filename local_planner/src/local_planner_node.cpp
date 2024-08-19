@@ -274,8 +274,10 @@ void LocalPlannerNode::pointCloudTransformThread(int index)
             {
                 geometry_msgs::msg::TransformStamped cloud_transform;
                 geometry_msgs::msg::TransformStamped fcu_transform;
+                
                 rclcpp::Time time_stamp_1(cameras_.untransformed_cloud_.header.stamp, RCL_ROS_TIME);
                 rclcpp::Time time_stamp_2(cameras_.untransformed_cloud_.header.stamp, RCL_ROS_TIME);
+
                 if (tf_buffer_.getTransform(cameras_.untransformed_cloud_.header.frame_id, "local_origin", time_stamp_1, cloud_transform) &&
                     tf_buffer_.getTransform(cameras_.untransformed_cloud_.header.frame_id, "fcu", time_stamp_2, fcu_transform))
                 {
@@ -343,7 +345,6 @@ void LocalPlannerNode::publishLaserScan() const
     obs_dist.angle_offset = 0;
     obs_dist.timestamp = px4_time;
     pub.obs_distance->publish(obs_dist);
-    RCLCPP_INFO(this->get_logger(), "AVOIDANCE DIS");
 }
 
 
@@ -422,7 +423,6 @@ void LocalPlannerNode::mainCallback()
         local_planner_->runPlanner();
 
         publishLaserScan();
-        RCLCPP_INFO(this->get_logger(), "Publish");
         std::lock_guard<std::mutex> lock(waypoints_mutex_);
         wp_generator_->setPlannerInfo(local_planner_->getAvoidanceOutput());
         last_wp_time_ = rclcpp::Clock().now();
