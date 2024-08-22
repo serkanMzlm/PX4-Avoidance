@@ -1,6 +1,3 @@
-#include <chrono>
-#include <thread>
-
 #include "local_planner/local_planner_node.hpp"
 
 using namespace std::placeholders;
@@ -20,8 +17,8 @@ void LocalPlannerNode::initTopic()
                                                                  std::bind(&LocalPlannerNode::vehicleOdomCallback, this, _1));
     sub.vehicle_status = this->create_subscription<vehicleStatusMsg>("/fmu/out/vehicle_status", qos,
                                                                      std::bind(&LocalPlannerNode::vehicleStatusCallback, this, _1));
-    sub.point_cloud = this->create_subscription<pointCloud2Msg>("/realsense_d435i/points", 100, 
-                                                                    std::bind(&LocalPlannerNode::pointCloudCallback, this, _1));                                                                     
+    sub.point_cloud = this->create_subscription<pointCloud2Msg>("/realsense_d435i/points", 100,
+                                                                std::bind(&LocalPlannerNode::pointCloudCallback, this, _1));
 
     pub.obs_distance = this->create_publisher<obstacleDistanceMsg>("/fmu/in/obstacle_distance", 10);
     pub.trajectory_setpoint = this->create_publisher<trajectorySetpointMsg>("/fmu/in/trajectory_setpoint", 10);
@@ -88,6 +85,7 @@ void LocalPlannerNode::vehicleStatusCallback(const vehicleStatusMsg::UniquePtr m
 
 void LocalPlannerNode::pointCloudCallback(const pointCloud2Msg::SharedPtr msg)
 {
+    
 }
 
 void LocalPlannerNode::visualizationCallback()

@@ -4,9 +4,9 @@
 #include "geometry_tools/geometry_tools.hpp"
 #include "math_tools/math_operations.hpp"
 #include "local_planner/local_planner_node_types.hpp"
-#include "local_planner/common.hpp"
+#include "avoidance/common.hpp"
 
-class LocalPlannerNode: public rclcpp::Node
+class LocalPlannerNode : public rclcpp::Node
 {
 private:
     Sub_t sub;
@@ -25,6 +25,7 @@ private:
     std::string frame_id_name;
     bool is_ready[READY_FLAG_SIZE] = {false};
     bool system_is_ready = false;
+
 public:
     LocalPlannerNode(std::string frame_name = "world");
     ~LocalPlannerNode() = default;

@@ -21,19 +21,19 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 
-using navPathMsg        = nav_msgs::msg::Path;
-using pointCloud2Msg    = sensor_msgs::msg::PointCloud2;
-using poseStampedMsg    = geometry_msgs::msg::PoseStamped;
-using pointStampedMsg   = geometry_msgs::msg::PointStamped;
-using markerArrayMsg    = visualization_msgs::msg::MarkerArray;
+using navPathMsg = nav_msgs::msg::Path;
+using pointCloud2Msg = sensor_msgs::msg::PointCloud2;
+using poseStampedMsg = geometry_msgs::msg::PoseStamped;
+using pointStampedMsg = geometry_msgs::msg::PointStamped;
+using markerArrayMsg = visualization_msgs::msg::MarkerArray;
 using tfStamped = geometry_msgs::msg::TransformStamped;
 
-using vehicleOdomMsg               = px4_msgs::msg::VehicleOdometry;
-using vehicleStatusMsg             = px4_msgs::msg::VehicleStatus;
-using vehicleCommandMsg            = px4_msgs::msg::VehicleCommand;
-using obstacleDistanceMsg          = px4_msgs::msg::ObstacleDistance;
-using trajectorySetpointMsg        = px4_msgs::msg::TrajectorySetpoint;
-using offboardControlModeMsg       = px4_msgs::msg::OffboardControlMode;
+using vehicleOdomMsg = px4_msgs::msg::VehicleOdometry;
+using vehicleStatusMsg = px4_msgs::msg::VehicleStatus;
+using vehicleCommandMsg = px4_msgs::msg::VehicleCommand;
+using obstacleDistanceMsg = px4_msgs::msg::ObstacleDistance;
+using trajectorySetpointMsg = px4_msgs::msg::TrajectorySetpoint;
+using offboardControlModeMsg = px4_msgs::msg::OffboardControlMode;
 using vehicleTrajectoryWaypointMsg = px4_msgs::msg::VehicleTrajectoryWaypoint;
 
 typedef struct

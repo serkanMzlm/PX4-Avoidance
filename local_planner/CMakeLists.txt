@@ -19,12 +19,13 @@ find_package(tf2_ros REQUIRED)
 find_package(Eigen3 3.3 REQUIRED)
 
 include_directories(include)
+
 file(GLOB_RECURSE SRC_FILE ${PROJECT_SOURCE_DIR}/src/local_planner/*.cpp)
 file(GLOB_RECURSE GEO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/geometry_tools/*.cpp)
-# file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
+file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
 
 add_library(geometry_lib ${GEO_LIB_FILE})
-# add_library(avoidance_lib ${GEO_LIB_FILE})
+add_library(avoidance_lib ${AVO_LIB_FILE})
 add_executable(${PROJECT_NAME}_node ${SRC_FILE})
 
 ament_target_dependencies(
@@ -39,7 +40,8 @@ ament_target_dependencies(
   tf2_ros
 )
 
-target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen geometry_lib)
+target_link_libraries(avoidance_lib PUBLIC Eigen3::Eigen geometry_lib)
+target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen avoidance_lib)
 
 install(
   DIRECTORY 
