@@ -3,13 +3,13 @@
 
 #include <cmath>
 
-#ifndef DEG2RAD
-#define DEG2RAD (M_PI / 180.0f)
-#endif
+// #ifndef DEG2RAD
+#define DEG_TO_RAD (M_PI / 180.0f)
+// #endif
 
-#ifndef RAD2DEG
-#define RAD2DEG (180.0f / M_PI)
-#endif
+// #ifndef RAD2DEG
+#define RAD_TO_DEG (180.0f / M_PI)
+// #endif
 
 void eulerToQuaternion(float *euler, float *quaternion);
 void quaternionToEuler(float *quaternion, float *euler);

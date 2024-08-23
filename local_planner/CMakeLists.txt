@@ -16,6 +16,9 @@ find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 
+find_package(pcl_ros REQUIRED)
+find_package(pcl_conversions REQUIRED)
+
 find_package(Eigen3 3.3 REQUIRED)
 
 include_directories(include)
@@ -24,9 +27,7 @@ file(GLOB_RECURSE SRC_FILE ${PROJECT_SOURCE_DIR}/src/local_planner/*.cpp)
 file(GLOB_RECURSE GEO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/geometry_tools/*.cpp)
 file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
 
-add_library(geometry_lib ${GEO_LIB_FILE})
-add_library(avoidance_lib ${AVO_LIB_FILE})
-add_executable(${PROJECT_NAME}_node ${SRC_FILE})
+add_executable(${PROJECT_NAME}_node ${SRC_FILE} ${GEO_LIB_FILE} ${AVO_LIB_FILE})
 
 ament_target_dependencies(
   ${PROJECT_NAME}_node
@@ -38,10 +39,11 @@ ament_target_dependencies(
   nav_msgs
   tf2
   tf2_ros
+  pcl_ros
+  pcl_conversions
 )
 
-target_link_libraries(avoidance_lib PUBLIC Eigen3::Eigen geometry_lib)
-target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen avoidance_lib)
+target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen)
 
 install(
   DIRECTORY 

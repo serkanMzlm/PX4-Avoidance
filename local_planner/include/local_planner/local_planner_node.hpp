@@ -12,6 +12,7 @@ private:
     Sub_t sub;
     Pub_t pub;
     TimeBase_t time_base;
+    Pcl_t pcl_data;
 
     State_t state = {0};
     State_t prev_state = {0};

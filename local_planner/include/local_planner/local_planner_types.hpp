@@ -57,4 +57,14 @@ typedef enum ReadyFlag
     READY_FLAG_SIZE
 };
 
+typedef struct DistanceSensorFeatures_t
+{
+    float min_range;
+    float max_range;
+    float smoothing_margin_deg;
+    float max_point_age_s;
+    float yaw_fcu_frame_deg;
+    float pitch_fcu_frame_deg;
+};
+
 #endif

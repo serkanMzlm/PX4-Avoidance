@@ -10,6 +10,8 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+#include <pcl_conversions/pcl_conversions.h>
+
 #include <px4_msgs/msg/vehicle_status.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
 #include <px4_msgs/msg/vehicle_odometry.hpp>
@@ -62,5 +64,10 @@ typedef struct
     rclcpp::TimerBase::SharedPtr cmd_loop;
     rclcpp::TimerBase::SharedPtr visual;
 } TimeBase_t;
+
+typedef struct {
+    pcl::PCLPointCloud2 point_cloud;
+	pcl::PointCloud<pcl::PointXYZ> xyz_cloud;
+}Pcl_t;
 
 #endif

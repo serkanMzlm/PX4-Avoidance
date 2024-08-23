@@ -85,7 +85,8 @@ void LocalPlannerNode::vehicleStatusCallback(const vehicleStatusMsg::UniquePtr m
 
 void LocalPlannerNode::pointCloudCallback(const pointCloud2Msg::SharedPtr msg)
 {
-    
+    pcl_conversions::toPCL(*msg, pcl_data.point_cloud);
+	pcl::fromPCLPointCloud2(pcl_data.point_cloud, pcl_data.xyz_cloud);
 }
 
 void LocalPlannerNode::visualizationCallback()
@@ -103,37 +104,38 @@ void LocalPlannerNode::visualizationCallback()
     tf_stamped.transform.rotation.y = state.quaternion.q[1];
     tf_stamped.transform.rotation.z = state.quaternion.q[2];
     tf_stamped.transform.rotation.w = state.quaternion.q[3];
-
-    if (isChangePose(prev_state.position, state.position, 0.1))
-    {
-        tf_stamped.transform.translation.x = state.position.x;
-        tf_stamped.transform.translation.y = state.position.y;
-        tf_stamped.transform.translation.z = -state.position.z;
-
-        for (int i = 0; i < 3; i++)
-        {
-            prev_state.position.data[i] = state.position.data[i];
-            prev_state.velocity.data[i] = state.velocity.data[i];
-            prev_state.acceleration.data[i] = state.acceleration.data[i];
-            prev_state.attitude.data[i] = state.attitude.data[i];
-        }
-        for (int i = 0; i < 4; i++)
-        {
-            prev_state.quaternion.q[i] = state.quaternion.q[i];
-        }
-
-        geometry_msgs::msg::PoseStamped pose_stamped;
-        pose_stamped.header = tf_stamped.header;
-        pose_stamped.pose.position.x = tf_stamped.transform.translation.x;
-        pose_stamped.pose.position.y = tf_stamped.transform.translation.y;
-        pose_stamped.pose.position.z = tf_stamped.transform.translation.z;
-
-        vehicle_path.header = tf_stamped.header;
-        vehicle_path.poses.push_back(pose_stamped);
-        pub.vehicle_path->publish(vehicle_path);
-    }
+    tf_stamped.transform.translation.x = state.position.x;
+    tf_stamped.transform.translation.y = state.position.y;
+    tf_stamped.transform.translation.z = -state.position.z;
 
     tf_vehicle->sendTransform(tf_stamped);
+
+    if (!isChangePose(prev_state.position, state.position, 0.1))
+    {
+        return;
+    }
+
+    for (int i = 0; i < 3; i++)
+    {
+        prev_state.position.data[i] = state.position.data[i];
+        prev_state.velocity.data[i] = state.velocity.data[i];
+        prev_state.acceleration.data[i] = state.acceleration.data[i];
+        prev_state.attitude.data[i] = state.attitude.data[i];
+    }
+    for (int i = 0; i < 4; i++)
+    {
+        prev_state.quaternion.q[i] = state.quaternion.q[i];
+    }
+
+    geometry_msgs::msg::PoseStamped pose_stamped;
+    pose_stamped.header = tf_stamped.header;
+    pose_stamped.pose.position.x = tf_stamped.transform.translation.x;
+    pose_stamped.pose.position.y = tf_stamped.transform.translation.y;
+    pose_stamped.pose.position.z = tf_stamped.transform.translation.z;
+
+    vehicle_path.header = tf_stamped.header;
+    vehicle_path.poses.push_back(pose_stamped);
+    pub.vehicle_path->publish(vehicle_path);
 }
 
 /////////////////////////////////////////////////
@@ -201,4 +203,12 @@ bool LocalPlannerNode::setArmedState(ArmState armed)
     }
 
     return true;
+}
+
+int main(int argc, char **argv)
+{
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<LocalPlannerNode>("world"));
+    rclcpp::shutdown();
+    return 0;
 }
