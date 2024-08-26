@@ -10,6 +10,8 @@ LocalPlannerNode::LocalPlannerNode(std::string frame_name) : Node("local_planner
 
 void LocalPlannerNode::initTopic()
 {
+    local_planner_.reset(new LocalPlanner());
+
     rmw_qos_profile_t qos_profile = rmw_qos_profile_sensor_data;
     auto qos = rclcpp::QoS(rclcpp::QoSInitialization(qos_profile.history, 5), qos_profile);
 
@@ -30,6 +32,8 @@ void LocalPlannerNode::initTopic()
 
     time_base.visual = this->create_wall_timer(std::chrono::milliseconds(P2F(10)),
                                                std::bind(&LocalPlannerNode::visualizationCallback, this));
+    time_base.main = this->create_wall_timer(std::chrono::milliseconds(P2F(50)), 
+                                                std::bind(&LocalPlannerNode::mainFunction, this));
 }
 
 bool LocalPlannerNode::isReady()
@@ -49,6 +53,17 @@ bool LocalPlannerNode::isReady()
 
     system_is_ready = true;
     return true;
+}
+
+void LocalPlannerNode::mainFunction()
+{
+    updatePlannerInfo();
+}
+
+void LocalPlannerNode::updatePlannerInfo()
+{
+    local_planner_->setState(newest_position_, velocity_, newest_orientation_);
+
 }
 
 /////////////////////////////////////////////////
@@ -86,7 +101,7 @@ void LocalPlannerNode::vehicleStatusCallback(const vehicleStatusMsg::UniquePtr m
 void LocalPlannerNode::pointCloudCallback(const pointCloud2Msg::SharedPtr msg)
 {
     pcl_conversions::toPCL(*msg, pcl_data.point_cloud);
-	pcl::fromPCLPointCloud2(pcl_data.point_cloud, pcl_data.xyz_cloud);
+    pcl::fromPCLPointCloud2(pcl_data.point_cloud, pcl_data.xyz_cloud);
 }
 
 void LocalPlannerNode::visualizationCallback()
@@ -179,29 +194,40 @@ void LocalPlannerNode::publishVehicleCommand(uint16_t command, float param1, flo
 
 bool LocalPlannerNode::setArmedState(ArmState armed)
 {
+    bool ret = false;
     if (armed == ArmState::ARM)
     {
-        if (vehicle_status.arming_state == 2)
-        {
-            RCLCPP_WARN(this->get_logger(), "The vehicle is already armed...");
-            return false;
-        }
-        publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_DO_SET_MODE, 1, 6);
-        publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0);
-        RCLCPP_INFO(this->get_logger(), "Arm command send");
+        ret = setArm();
     }
     else
     {
-        if (vehicle_status.arming_state == 1)
-        {
-            RCLCPP_WARN(this->get_logger(), "The vehicle is already disarmed...");
-            return false;
-        }
-        publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_DO_SET_MODE, 1, 6);
-        publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0);
-        RCLCPP_INFO(this->get_logger(), "Disarm command send");
+        ret = setDisarm();
     }
+    return ret;
+}
 
+bool LocalPlannerNode::setArm()
+{
+    if (vehicle_status.arming_state == 2)
+    {
+        RCLCPP_WARN(this->get_logger(), "The vehicle is already armed...");
+        return false;
+    }
+    publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+    publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0);
+    RCLCPP_INFO(this->get_logger(), "Arm command send");
+    return true;
+}
+bool LocalPlannerNode::setDisarm()
+{
+    if (vehicle_status.arming_state == 1)
+    {
+        RCLCPP_WARN(this->get_logger(), "The vehicle is already disarmed...");
+        return false;
+    }
+    publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_DO_SET_MODE, 1, 6);
+    publishVehicleCommand(vehicleCommandMsg::VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0);
+    RCLCPP_INFO(this->get_logger(), "Disarm command send");
     return true;
 }
 

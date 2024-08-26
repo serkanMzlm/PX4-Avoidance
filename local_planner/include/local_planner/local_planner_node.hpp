@@ -4,6 +4,7 @@
 #include "geometry_tools/geometry_tools.hpp"
 #include "math_tools/math_operations.hpp"
 #include "local_planner/local_planner_node_types.hpp"
+#include "local_planner/local_planner.hpp"
 #include "avoidance/common.hpp"
 
 class LocalPlannerNode : public rclcpp::Node
@@ -27,11 +28,15 @@ private:
     bool is_ready[READY_FLAG_SIZE] = {false};
     bool system_is_ready = false;
 
+    std::unique_ptr<LocalPlanner> local_planner_;
+
 public:
     LocalPlannerNode(std::string frame_name = "world");
     ~LocalPlannerNode() = default;
     void initTopic();
     bool isReady();
+    void mainFunction();
+    void updatePlannerInfo();
 
     void vehicleOdomCallback(const vehicleOdomMsg::UniquePtr msg);
     void vehicleStatusCallback(const vehicleStatusMsg::UniquePtr msg);
@@ -42,6 +47,8 @@ public:
     void publishTrajectorySetpoint();
     void publishVehicleCommand(uint16_t command, float param1 = 0.0, float param2 = 0.0);
     bool setArmedState(ArmState armed);
+    bool setArm();
+    bool setDisarm();
 };
 
 #endif

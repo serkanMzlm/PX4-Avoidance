@@ -61,6 +61,7 @@ typedef struct
 
 typedef struct
 {
+    rclcpp::TimerBase::SharedPtr main;
     rclcpp::TimerBase::SharedPtr cmd_loop;
     rclcpp::TimerBase::SharedPtr visual;
 } TimeBase_t;

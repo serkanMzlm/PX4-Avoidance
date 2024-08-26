@@ -23,6 +23,13 @@ private:
     Eigen::Vector3f velocity_ = Eigen::Vector3f::Zero();
 
     std::vector<int> closed_set_;
+    pcl::PointCloud<pcl::PointXYZI> final_cloud_;
+
+    Eigen::Vector3f position_ = Eigen::Vector3f::Zero();
+    Eigen::Vector3f velocity_ = Eigen::Vector3f::Zero();
+    Eigen::Vector3f goal_ = Eigen::Vector3f::Zero();
+    Eigen::Vector3f prev_goal_ = Eigen::Vector3f::Zero();
+    Eigen::Vector3f closest_pt_ = Eigen::Vector3f::Zero();
 
 public:
     LocalPlanner();
@@ -31,6 +38,14 @@ public:
      * @brief fills message to send histogram to the FCU
      **/
     void updateObstacleDistanceMsg(Histogram hist);
+
+    /**
+     * @brief     setter method for vehicle position, orientation and velocity
+     * @param[in] pos, vehicle position coming from the FCU
+     * @param[in] vel, vehicle velocity in the FCU frame
+     * @param[in] q, vehicle orientation message coming from the FCU
+     **/
+    void setState(const Eigen::Vector3f &pos, const Eigen::Vector3f &vel, const Eigen::Quaternionf &q);
 };
 
 #endif

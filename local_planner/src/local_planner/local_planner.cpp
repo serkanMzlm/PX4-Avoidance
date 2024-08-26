@@ -38,3 +38,11 @@ void LocalPlanner::updateObstacleDistanceMsg(Histogram hist)
         }
     }
 }
+
+void LocalPlanner::setState(const Eigen::Vector3f& pos, const Eigen::Vector3f& vel, const Eigen::Quaternionf& q) {
+  position_ = pos;
+  velocity_ = vel;
+  yaw_fcu_frame_deg_ = getYawFromQuaternion(q);
+  pitch_fcu_frame_deg_ = getPitchFromQuaternion(q);
+  star_planner_->setPose(position_, velocity_);
+}
