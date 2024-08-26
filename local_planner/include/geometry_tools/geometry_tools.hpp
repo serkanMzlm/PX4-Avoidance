@@ -17,5 +17,4 @@ void quaternionToEuler(float *quaternion, float *euler);
 float wrapAngleToPlusMinusPI(float angle);
 float wrapAngleToPlusMinus180(float angle);
 
-
 #endif

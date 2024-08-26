@@ -22,6 +22,8 @@ private:
     Eigen::Vector3f position_ = Eigen::Vector3f::Zero();
     Eigen::Vector3f velocity_ = Eigen::Vector3f::Zero();
 
+    std::vector<int> closed_set_;
+
 public:
     LocalPlanner();
     void setup();
