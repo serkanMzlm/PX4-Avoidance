@@ -24,11 +24,11 @@ find_package(Eigen3 3.3 REQUIRED)
 
 include_directories(include)
 
-file(GLOB_RECURSE SRC_FILE ${PROJECT_SOURCE_DIR}/src/local_planner/*.cpp)
-file(GLOB_RECURSE GEO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/geometry_tools/*.cpp)
-file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
+file(GLOB_RECURSE SRC_FILE ${PROJECT_SOURCE_DIR}/src/*.cpp)
+# file(GLOB_RECURSE GEO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/geometry_tools/*.cpp)
+# file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
 
-add_executable(${PROJECT_NAME}_node ${SRC_FILE} ${GEO_LIB_FILE} ${AVO_LIB_FILE})
+add_executable(${PROJECT_NAME}_node ${SRC_FILE})
 
 ament_target_dependencies(
   ${PROJECT_NAME}_node
@@ -47,12 +47,12 @@ ament_target_dependencies(
 
 target_link_libraries(${PROJECT_NAME}_node Eigen3::Eigen)
 
-install(
-  DIRECTORY 
-  launch
-  DESTINATION  
-  share/${PROJECT_NAME}/
-)
+# install(
+#   DIRECTORY 
+#   launch
+#   DESTINATION  
+#   share/${PROJECT_NAME}/
+# )
 
 install(TARGETS
   ${PROJECT_NAME}_node

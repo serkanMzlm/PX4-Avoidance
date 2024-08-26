@@ -1,8 +1,6 @@
 #ifndef __LOCAL_PLANNER_NODE_TYPES_HPP__
 #define __LOCAL_PLANNER_NODE_TYPES_HPP__
 
-#include "local_planner/local_planner_types.hpp"
-
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -38,37 +36,54 @@ using trajectorySetpointMsg = px4_msgs::msg::TrajectorySetpoint;
 using offboardControlModeMsg = px4_msgs::msg::OffboardControlMode;
 using vehicleTrajectoryWaypointMsg = px4_msgs::msg::VehicleTrajectoryWaypoint;
 
-typedef struct
+typedef union
 {
-    rclcpp::Subscription<pointCloud2Msg>::SharedPtr point_cloud;
-    rclcpp::Subscription<vehicleOdomMsg>::SharedPtr vehicle_odom;
-    rclcpp::Subscription<vehicleStatusMsg>::SharedPtr vehicle_status;
-
-    rclcpp::Subscription<poseStampedMsg>::SharedPtr pose_goal;
-    rclcpp::Subscription<markerArrayMsg>::SharedPtr goal_topic;
-    rclcpp::Subscription<pointStampedMsg>::SharedPtr clicked_point;
-} Sub_t;
-
-typedef struct
-{
-    rclcpp::Publisher<obstacleDistanceMsg>::SharedPtr obs_distance;
-    rclcpp::Publisher<vehicleCommandMsg>::SharedPtr vehicle_command;
-    rclcpp::Publisher<navPathMsg>::SharedPtr vehicle_path;
-    rclcpp::Publisher<trajectorySetpointMsg>::SharedPtr trajectory_setpoint;
-    rclcpp::Publisher<offboardControlModeMsg>::SharedPtr offboard_control_mode;
-    rclcpp::Publisher<vehicleTrajectoryWaypointMsg>::SharedPtr trajector_waypoint;
-} Pub_t;
+    struct
+    {
+        float x;
+        float y;
+        float z;
+    };
+    float data[3];
+} Vec3_t;
 
 typedef struct
 {
-    rclcpp::TimerBase::SharedPtr main;
-    rclcpp::TimerBase::SharedPtr cmd_loop;
-    rclcpp::TimerBase::SharedPtr visual;
-} TimeBase_t;
+    union
+    {
+        struct
+        {
+            float x;
+            float y;
+            float z;
+            float w;
+        };
+        float quaternion[4];
+    };
 
-typedef struct {
-    pcl::PCLPointCloud2 point_cloud;
-	pcl::PointCloud<pcl::PointXYZ> xyz_cloud;
-}Pcl_t;
+    union
+    {
+        struct
+        {
+            float roll;
+            float pitch;
+            float yaw;
+        };
+        float euler[3];
+    };
+} Orientation_t;
+
+typedef struct
+{
+    Vec3_t position;
+    Vec3_t velocity;
+    Orientation_t orientation;
+} State_t;
+
+enum class ArmState
+{
+    ARM,
+    DISARM
+};
 
 #endif
