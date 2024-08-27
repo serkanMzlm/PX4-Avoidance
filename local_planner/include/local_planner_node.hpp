@@ -1,6 +1,7 @@
 #ifndef __LOCAL_PLANNER_NODE_HPP__
 #define __LOCAL_PLANNER_NODE_HPP__
 
+#include "avoidance/common.hpp"
 #include "local_planner_types.hpp"
 #include "math_tools/transform_functions.hpp"
 

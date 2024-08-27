@@ -26,9 +26,9 @@ include_directories(include)
 
 file(GLOB_RECURSE SRC_FILE ${PROJECT_SOURCE_DIR}/src/*.cpp)
 # file(GLOB_RECURSE GEO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/geometry_tools/*.cpp)
-# file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
+file(GLOB_RECURSE AVO_LIB_FILE ${PROJECT_SOURCE_DIR}/src/avoidance/*.cpp)
 
-add_executable(${PROJECT_NAME}_node ${SRC_FILE})
+add_executable(${PROJECT_NAME}_node ${SRC_FILE} ${AVO_LIB_FILE})
 
 ament_target_dependencies(
   ${PROJECT_NAME}_node

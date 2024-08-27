@@ -40,6 +40,7 @@ void LocalPlannerNode::pointCloudCallback(const pointCloud2Msg::SharedPtr msg)
 {
     pcl_conversions::toPCL(*msg, data.pc);
     pcl::fromPCLPointCloud2(data.pc, data.pc_xyz);
+    
     isReadyUpdate(POINTCLOUD_FLAG);
 }
 
@@ -64,10 +65,10 @@ void LocalPlannerNode::visualizationCallback()
     tf_stamped.transform.translation.z = -state.position.z;
 
     tf_vehicle->sendTransform(tf_stamped);
-    // if (!isChangePose(prev_state.position, state.position, 0.1))
-    // {
-    //     return;
-    // }
+    if (!isChangePose(prev_state.position, state.position, 0.1))
+    {
+        return;
+    }
 
     prev_state = state;
 
