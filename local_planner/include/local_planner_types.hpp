@@ -1,6 +1,9 @@
 #ifndef __LOCAL_PLANNER_NODE_TYPES_HPP__
 #define __LOCAL_PLANNER_NODE_TYPES_HPP__
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -84,6 +87,23 @@ enum class ArmState
 {
     ARM,
     DISARM
+};
+
+struct PolarPoint {
+  PolarPoint(float e_, float z_, float r_) : e(e_), z(z_), r(r_){};
+  PolarPoint() : e(0.0f), z(0.0f), r(0.0f){};
+  float e;
+  float z;
+  float r;
+};
+
+struct FOV {
+  FOV() : yaw_deg(0.f), pitch_deg(0.f), h_fov_deg(0.f), v_fov_deg(0.f){};
+  FOV(float y, float p, float h, float v) : yaw_deg(y), pitch_deg(p), h_fov_deg(h), v_fov_deg(v){};
+  float yaw_deg;
+  float pitch_deg;
+  float h_fov_deg;
+  float v_fov_deg;
 };
 
 #endif

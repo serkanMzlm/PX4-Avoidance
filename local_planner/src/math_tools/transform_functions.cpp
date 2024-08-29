@@ -46,3 +46,13 @@ void quaternionToEuler(float *quaternion, float *euler)
     float cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
     euler[2] = std::atan2(siny_cosp, cosy_cosp);
 }
+
+float wrapAngleToPlusMinusPI(float angle)
+{
+    return angle - 2.0f * M_PI * std::floor(angle / (2.0f * M_PI) + 0.5f);
+}
+
+float wrapAngleToPlusMinus180(float angle)
+{
+    return angle - 360.f * std::floor(angle / 360.f + 0.5f);
+}
